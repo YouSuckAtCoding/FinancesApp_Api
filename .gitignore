@@ -1,0 +1,7 @@
+*.dbmdl
+FinancesAppDb/
+.vs/
+bin/
+obj/
+
+
