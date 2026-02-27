@@ -3,5 +3,6 @@ FinancesAppDb/
 .vs/
 bin/
 obj/
+.sql
 
 
