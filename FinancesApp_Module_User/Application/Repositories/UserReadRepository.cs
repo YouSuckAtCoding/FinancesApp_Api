@@ -114,7 +114,7 @@ public class UserReadRepository : IUserReadRepository
     }
 
     public async Task<IReadOnlyList<User>> GetUsers(SqlConnection? connection = null,
-                                                     CancellationToken token = default)
+                                                    CancellationToken token = default)
     {
         try
         {
@@ -160,8 +160,8 @@ public class UserReadRepository : IUserReadRepository
     }
 
     public async Task<IReadOnlyList<User>> GetUsersRegisteredAfter(DateTimeOffset filterDate,
-                                                                     SqlConnection? connection = null,
-                                                                     CancellationToken token = default)
+                                                                   SqlConnection? connection = null,
+                                                                   CancellationToken token = default)
     {
         try
         {

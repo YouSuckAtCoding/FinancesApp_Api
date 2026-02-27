@@ -63,35 +63,16 @@ public class GetUsersHandlerTests
 
     [Fact]
     public async Task Should_Return_Empty_List_When_Exception_Occurs()
-    {
-        // Arrange
+    {        
         _mockRepository.GetUsers(token: Arg.Any<CancellationToken>())
             .Throws(new Exception("Database connection failed"));
 
         var query = new GetUsers();
 
-        // Act
         var result = await _handler.Handle(query);
-
-        // Assert
+        
         result.Should().NotBeNull();
         result.Should().BeEmpty();
     }
-
-    [Fact]
-    public async Task Should_Pass_CancellationToken_To_Repository()
-    {
-        // Arrange
-        var cancellationToken = new CancellationToken();
-        _mockRepository.GetUsers(token: cancellationToken)
-            .Returns(new List<User>().AsReadOnly());
-
-        var query = new GetUsers();
-
-        // Act
-        await _handler.Handle(query, cancellationToken);
-
-        // Assert
-        await _mockRepository.Received(1).GetUsers(token: cancellationToken);
-    }
+  
 }

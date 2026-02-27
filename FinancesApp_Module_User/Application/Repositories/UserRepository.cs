@@ -14,7 +14,9 @@ public class UserRepository : IUserRepository
         _dbConnectionFactory = dbConnectionFactory;
         _commandFactory = commandFactory;
     }
-    public async Task<Guid> CreateUserAsync(User user, CancellationToken token = default)
+    public async Task<Guid> CreateUserAsync(User user,
+                                            SqlConnection? connection = null,
+                                            CancellationToken token = default)
     {
         const string InsertCommandText = @"INSERT INTO [FinanceApp].[dbo].[Users] 
                                             (Id, Name, Email, RegisteredAt, ModifiedAt, DateOfBirth, ProfileImage)
@@ -49,7 +51,9 @@ public class UserRepository : IUserRepository
         return userId;
     }
 
-    public async Task<bool> UpdateUserAsync(User user, CancellationToken token = default)
+    public async Task<bool> UpdateUserAsync(User user,
+                                            SqlConnection? connection = null,
+                                            CancellationToken token = default)
     {
         const string UpdateCommandText = @"UPDATE [FinanceApp].[dbo].[Users]
                                            SET Name = @Name,
@@ -82,6 +86,7 @@ public class UserRepository : IUserRepository
     }
 
     public async Task<bool> DeleteUserAsync(Guid userId,
+                                            SqlConnection? connection = null,
                                             CancellationToken token = default)
     {
         const string DeleteCommandText = @"DELETE FROM [FinanceApp].[dbo].[Users] 

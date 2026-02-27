@@ -24,7 +24,7 @@ public class CreateAccountHandler : ICommandHandler<CreateAccount, bool>
 
         try
         {
-            var result = await _accountRepository.CreateAccountAsync(account, cancellationToken);
+            var result = await _accountRepository.CreateAccountAsync(account, token: cancellationToken);
 
             if (result)
             {

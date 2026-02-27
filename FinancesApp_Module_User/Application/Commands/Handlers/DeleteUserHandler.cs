@@ -18,7 +18,7 @@ public class DeleteUserHandler(IUserRepository userRepository,
 
         try
         {
-            var result = await _userRepository.DeleteUserAsync(command.UserId, cancellationToken);
+            var result = await _userRepository.DeleteUserAsync(command.UserId, token: cancellationToken);
 
             if (result)
             {

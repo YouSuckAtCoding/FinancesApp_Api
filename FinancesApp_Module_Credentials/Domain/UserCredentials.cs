@@ -14,6 +14,7 @@ public class UserCredentials
     {
         
     }
+
     public UserCredentials(Guid id, Guid userId, string login, string passwordHash)
     {
         Id = id;
@@ -21,7 +22,12 @@ public class UserCredentials
         Login = login;
         Password = passwordHash;
     }
-
+    public UserCredentials(Guid userId, string login, string passwordHash)
+    {
+        UserId = userId;
+        Login = login;
+        Password = passwordHash;
+    }
     public UserCredentials(string login, string passwordHash)
     {
         Login = login;

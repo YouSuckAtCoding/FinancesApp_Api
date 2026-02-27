@@ -21,7 +21,7 @@ public class UpdateUserCredentialsHandler(IUserCredentialsRepository credentials
             var credentials = new UserCredentials();
             credentials.SetPassword(command.NewPlainPassword);
 
-            var result = await _credentialsRepository.UpdatePasswordAsync(command.UserId, credentials.Password, cancellationToken);
+            var result = await _credentialsRepository.UpdatePasswordAsync(command.UserId, credentials.Password, token: cancellationToken);
 
             if (result)
                 _logger.LogInformation(

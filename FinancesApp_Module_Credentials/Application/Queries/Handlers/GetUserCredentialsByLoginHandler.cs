@@ -20,7 +20,7 @@ public class GetUserCredentialsByLoginHandler(IUserCredentialsReadRepository cre
 
         try
         {
-            result = await _credentialsRepository.GetByLoginAsync(query.Login, cancellationToken);
+            result = await _credentialsRepository.GetByLoginAsync(query.Login, token: cancellationToken);
 
             if (result is not null)
                 _logger.LogInformation(

@@ -15,7 +15,9 @@ public class UserCredentialsReadRepository : IUserCredentialsReadRepository
         _commandFactory = commandFactory;
     }
 
-    public async Task<UserCredentials> GetByUserIdAsync(Guid userId, CancellationToken token = default)
+    public async Task<UserCredentials> GetByUserIdAsync(Guid userId,
+                                                        SqlConnection? connection = null, 
+                                                        CancellationToken token = default)
     {
         const string SelectCommandText = @"SELECT Id, UserId, Login, PasswordHash
                                            FROM [FinanceApp].[dbo].[UserCredentials]
@@ -23,6 +25,7 @@ public class UserCredentialsReadRepository : IUserCredentialsReadRepository
 
         var credentials = await _commandFactory.ExecuteAsync(
             commandText: SelectCommandText,
+            connection: connection,
             options: new CreateSqlCommandOptions
             {
                 Parameters = [new("@UserId", System.Data.SqlDbType.UniqueIdentifier) { Value = userId }]
@@ -44,7 +47,9 @@ public class UserCredentialsReadRepository : IUserCredentialsReadRepository
         return credentials;
     }
 
-    public async Task<UserCredentials> GetByLoginAsync(string login, CancellationToken token = default)
+    public async Task<UserCredentials> GetByLoginAsync(string login,
+                                                       SqlConnection? connection = null,
+                                                       CancellationToken token = default)
     {
         const string SelectCommandText = @"SELECT Id, UserId, Login, PasswordHash
                                            FROM [FinanceApp].[dbo].[UserCredentials]
@@ -52,6 +57,7 @@ public class UserCredentialsReadRepository : IUserCredentialsReadRepository
 
         var credentials = await _commandFactory.ExecuteAsync(
             commandText: SelectCommandText,
+            connection: connection,
             options: new CreateSqlCommandOptions
             {
                 Parameters = [new SqlParameter("@Login", login)]

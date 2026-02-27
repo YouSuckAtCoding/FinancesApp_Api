@@ -40,7 +40,7 @@ public class DeleteAccountHandler : ICommandHandler<DeleteAccount, bool>
 
             var result = await _accountRepository.DeleteAccountAsync(
                 command.AccountId,
-                cancellationToken);
+                token: cancellationToken);
 
             if (result)
             {

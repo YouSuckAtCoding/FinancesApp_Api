@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FinancesApp_Module_Account\FinancesApp_Module_Account.csproj" />
+    <ProjectReference Include="..\FinancesApp_Module_Credentials\FinancesApp_Module_Credentials.csproj" />
     <ProjectReference Include="..\FinancesApp_Module_User\FinancesApp_Module_User.csproj" />
   </ItemGroup>
 

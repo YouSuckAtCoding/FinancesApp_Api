@@ -14,7 +14,9 @@ public class AccountRepository : IAccountRepository
         _commandFactory = commandFactory;
     }
 
-    public async Task<bool> CreateAccountAsync(Account account, CancellationToken token = default)
+    public async Task<bool> CreateAccountAsync(Account account,
+                                               SqlConnection? connection = null, 
+                                               CancellationToken token = default)
     {
         const string InsertCommandText = @"INSERT INTO [FinanceApp].[dbo].[Account] 
                          (Id, UserId, Name, BalanceAmount, BalanceCurrency, CreditLimitAmount, CreditLimitCurrency,
@@ -22,8 +24,9 @@ public class AccountRepository : IAccountRepository
                          VALUES 
                             (@Id, @UserId, @Name, @BalanceAmount, @BalanceCurrency, @CreditLimitAmount, @CreditLimitCurrency,
                              @CurrentDebtAmount, @CurrentDebtCurrency, @Type, @Status, @PaymentDate, @DueDate, @CreatedAt, @ClosedAt)";
-
-        var parameters = new Dictionary<string, object>
+        try
+        {
+            var parameters = new Dictionary<string, object>
         {
             { "@Id", account.Id },
             { "@UserId", (object?)account.UserId ?? DBNull.Value },
@@ -42,19 +45,26 @@ public class AccountRepository : IAccountRepository
             { "@ClosedAt", (object?)account.ClosedAt ?? DBNull.Value }
         };
 
-        var rowsAffected = await _commandFactory.ExecuteAsync(
-            commandText: InsertCommandText,
-            options: new CreateSqlCommandOptions
-            {
-                Parameters = [.. parameters.Select(p => new SqlParameter(p.Key, p.Value))]
-            },
-            operation: async command => await command.ExecuteNonQueryAsync(token),
-            token);
+            var rowsAffected = await _commandFactory.ExecuteAsync(
+                commandText: InsertCommandText,
+                options: new CreateSqlCommandOptions
+                {
+                    Parameters = [.. parameters.Select(p => new SqlParameter(p.Key, p.Value))]
+                },
+                operation: async command => await command.ExecuteNonQueryAsync(token),
+                token);
 
-        return rowsAffected > 0;
+            return rowsAffected > 0;
+        }
+        catch
+        {
+            throw;
+        }
     }
 
-    public async Task<bool> UpdateAccountAsync(Account account, CancellationToken token = default)
+    public async Task<bool> UpdateAccountAsync(Account account,
+                                               SqlConnection? connection = null,
+                                               CancellationToken token = default)
     {
         const string UpdateCommandText = @"UPDATE [FinanceApp].[dbo].[Account]
                          SET Name = @Name,
@@ -98,7 +108,9 @@ public class AccountRepository : IAccountRepository
         return rowsAffected > 0;
     }
 
-    public async Task<bool> DeleteAccountAsync(Guid accountId, CancellationToken token = default)
+    public async Task<bool> DeleteAccountAsync(Guid accountId,
+                                               SqlConnection? connection = null,
+                                               CancellationToken token = default)
     {
         const string DeleteCommandText = @"DELETE FROM [FinanceApp].[dbo].[Account] 
                                           WHERE Id = @Id";

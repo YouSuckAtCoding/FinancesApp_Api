@@ -17,7 +17,7 @@ public class DeleteUserCredentialsHandler(IUserCredentialsRepository credentials
 
         try
         {
-            var result = await _credentialsRepository.DeleteUserCredentialsAsync(command.UserId, cancellationToken);
+            var result = await _credentialsRepository.DeleteUserCredentialsAsync(command.UserId, token: cancellationToken);
 
             if (result)
                 _logger.LogInformation(

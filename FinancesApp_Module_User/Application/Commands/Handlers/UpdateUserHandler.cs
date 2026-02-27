@@ -20,7 +20,7 @@ public class UpdateUserHandler(IUserRepository userRepository,
 
         try
         {
-            var result = await _userRepository.UpdateUserAsync(user, cancellationToken);
+            var result = await _userRepository.UpdateUserAsync(user, token: cancellationToken);
 
             if (result)
             {

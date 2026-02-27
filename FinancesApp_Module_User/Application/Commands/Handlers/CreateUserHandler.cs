@@ -20,7 +20,7 @@ public class CreateUserHandler(IUserRepository userRepository,
 
         try
         {
-            var result = await _userRepository.CreateUserAsync(user, cancellationToken);
+            var result = await _userRepository.CreateUserAsync(user, token: cancellationToken);
 
             if (result != Guid.Empty)
             {

@@ -1,8 +1,11 @@
 ﻿using FinanceAppDatabase.DbConnection;
 using FinancesApp_Module_Account.Application.Repositories;
 using FinancesApp_Module_Account.Domain;
+using FinancesApp_Module_User.Application.Repositories;
+using FinancesApp_Module_User.Domain;
 using FinancesApp_Tests.Fixtures;
 using FluentAssertions;
+using Microsoft.Data.SqlClient;
 
 namespace FinancesApp_Tests.AccountTests.Repositories;
 public class AccountReadRepositoryTests : IClassFixture<SqlFixture>
@@ -10,19 +13,21 @@ public class AccountReadRepositoryTests : IClassFixture<SqlFixture>
     private readonly IDbConnectionFactory _connectionFactory;
     private readonly ICommandFactory _commandFactory;
     private readonly IAccountReadRepository _accountReadRepository;
+    private readonly IUserRepository _userRepository;
     private readonly SqlFixture _fixture;
 
     private const string TableName = "[FinanceApp].[dbo].[Account]";
     private const string InsertCommandText = 
-        $" INSERT INTO {TableName} (Name, BalanceAmount, CreatedAt, Type, Status)" +
+        $" INSERT INTO {TableName} (Name, UserId, BalanceAmount, CreatedAt, Type, Status)" +
         " OUTPUT INSERTED.Id " +
-        " VALUES (@Name, @BalanceAmount, @CreatedAt, @Type, @Status)";
+        " VALUES (@Name, @UserId, @BalanceAmount, @CreatedAt, @Type, @Status)";
 
     public AccountReadRepositoryTests(SqlFixture fixture)
     {
         _connectionFactory = fixture.ConnectionFactory;
         _commandFactory = fixture.CommandFactory;
         _accountReadRepository = new AccountReadRepository(_connectionFactory, _commandFactory);
+        _userRepository = new UserRepository(_connectionFactory, _commandFactory);
         _fixture = fixture; 
     }
 
@@ -47,12 +52,15 @@ public class AccountReadRepositoryTests : IClassFixture<SqlFixture>
 
         await _connectionFactory.ExecuteInScopeAsync(async connection =>
         {
+            Guid newUserId = await CreateNewUser(connection);
+
             Guid insertedId = await _commandFactory.ExecuteAsync(
             commandText: InsertCommandText,
             connection: connection,
             options: new CreateSqlCommandOptions
             {
                 Parameters = [ new("@Name", parameters["@Name"]),
+                               new("@UserId", newUserId),
                                new("@BalanceAmount", parameters["@BalanceAmount"]),
                                new("@CreatedAt", parameters["@CreatedAt"]),
                                new("@Type", parameters["@Type"]),
@@ -87,14 +95,18 @@ public class AccountReadRepositoryTests : IClassFixture<SqlFixture>
         {
             await ClearAccounTable(connection);
 
+
             for (int i = 0; i < 5; i++)
             {
+                Guid newUserId = await CreateNewUser(connection);
+
                 await _commandFactory.ExecuteAsync(
                 commandText: InsertCommandText,
                 connection: connection,
                 options: new CreateSqlCommandOptions
                 {
                   Parameters = [ new("@Name", parameters["@Name"]),
+                                 new("@UserId", newUserId),
                                  new("@BalanceAmount", parameters["@BalanceAmount"]),
                                  new("@CreatedAt", parameters["@CreatedAt"]),
                                  new("@Type", parameters["@Type"]),
@@ -124,6 +136,8 @@ public class AccountReadRepositoryTests : IClassFixture<SqlFixture>
 
             for (int i = 0; i < 5; i++)
             {
+                Guid newUserId = await CreateNewUser(connection);
+
                 Dictionary<string, object> parameters = GetBaseAccountInsertParameters(i);
 
                 await _commandFactory.ExecuteAsync(
@@ -132,6 +146,7 @@ public class AccountReadRepositoryTests : IClassFixture<SqlFixture>
                 options: new CreateSqlCommandOptions
                 {
                     Parameters = [new("@Name", parameters["@Name"]),
+                                 new("@UserId", newUserId),
                                  new("@BalanceAmount", parameters["@BalanceAmount"]),
                                  new("@CreatedAt", parameters["@CreatedAt"]),
                                  new("@Type", parameters["@Type"]),
@@ -163,6 +178,8 @@ public class AccountReadRepositoryTests : IClassFixture<SqlFixture>
 
             for (int i = 0; i < 5; i++)
             {
+                Guid newUserId = await CreateNewUser(connection);
+
                 Dictionary<string, object> parameters = GetBaseAccountInsertParameters(i);
 
                 await _commandFactory.ExecuteAsync(
@@ -171,6 +188,7 @@ public class AccountReadRepositoryTests : IClassFixture<SqlFixture>
                 options: new CreateSqlCommandOptions
                 {
                     Parameters = [new("@Name", parameters["@Name"]),
+                                 new("@UserId", newUserId),
                                  new("@BalanceAmount", parameters["@BalanceAmount"]),
                                  new("@CreatedAt", parameters["@CreatedAt"]),
                                  new("@Type", parameters["@Type"]),
@@ -201,7 +219,21 @@ public class AccountReadRepositoryTests : IClassFixture<SqlFixture>
                         },
                         default);
     }
+    private async Task<Guid> CreateNewUser(SqlConnection connection)
+    {
+        var user = new User(
+            id: Guid.NewGuid(),
+            name: "John Doe",
+            email: $"{Guid.NewGuid().ToString().Replace("-", "")}@example.com",
+            registeredAt: DateTimeOffset.UtcNow,
+            modifiedAt: DateTimeOffset.UtcNow,
+            dateOfBirth: DateTimeOffset.UtcNow.AddYears(-30),
+            profileImage: "https://example.com/profile.jpg"
+        );
 
+        var result = await _userRepository.CreateUserAsync(user, connection);
+        return result;
+    }
     private static Dictionary<string, object> GetBaseAccountInsertParameters(int pos = 0)
     {
         return new Dictionary<string, object>

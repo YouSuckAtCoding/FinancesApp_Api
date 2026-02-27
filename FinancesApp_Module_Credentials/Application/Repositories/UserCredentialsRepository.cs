@@ -15,17 +15,18 @@ public class UserCredentialsRepository : IUserCredentialsRepository
         _commandFactory = commandFactory;
     }
 
-    public async Task<Guid> CreateUserCredentialsAsync(UserCredentials credentials, CancellationToken token = default)
+    public async Task<Guid> CreateUserCredentialsAsync(UserCredentials credentials,
+                                                       SqlConnection? connection = null,
+                                                       CancellationToken token = default)
     {
         const string InsertCommandText = @"INSERT INTO [FinanceApp].[dbo].[UserCredentials]
-                                            (Id, UserId, Login, PasswordHash)
+                                            (UserId, Login, PasswordHash)
                                             OUTPUT INSERTED.Id
                                             VALUES
-                                            (@Id, @UserId, @Login, @PasswordHash)";
+                                            (@UserId, @Login, @PasswordHash)";
 
         var parameters = new Dictionary<string, object>
         {
-            { "@Id",           credentials.Id },
             { "@UserId",       credentials.UserId },
             { "@Login",        credentials.Login },
             { "@PasswordHash", credentials.Password }
@@ -46,7 +47,10 @@ public class UserCredentialsRepository : IUserCredentialsRepository
         return insertedId;
     }
 
-    public async Task<bool> UpdatePasswordAsync(Guid userId, string newPasswordHash, CancellationToken token = default)
+    public async Task<bool> UpdatePasswordAsync(Guid userId, 
+                                                string newPasswordHash,
+                                                SqlConnection? connection = null,
+                                                CancellationToken token = default)
     {
         const string UpdateCommandText = @"UPDATE [FinanceApp].[dbo].[UserCredentials]
                                            SET PasswordHash = @PasswordHash
@@ -68,7 +72,9 @@ public class UserCredentialsRepository : IUserCredentialsRepository
         return rowsAffected > 0;
     }
 
-    public async Task<bool> DeleteUserCredentialsAsync(Guid userId, CancellationToken token = default)
+    public async Task<bool> DeleteUserCredentialsAsync(Guid userId,
+                                                       SqlConnection? connection = null,
+                                                       CancellationToken token = default)
     {
         const string DeleteCommandText = @"DELETE FROM [FinanceApp].[dbo].[UserCredentials]
                                            WHERE UserId = @UserId";

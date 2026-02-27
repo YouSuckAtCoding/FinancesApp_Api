@@ -25,7 +25,7 @@ public class UpdateAccountHandler : ICommandHandler<UpdateAccount, bool>
 
         try
         {
-            var result = await _accountRepository.UpdateAccountAsync(account, cancellationToken);
+            var result = await _accountRepository.UpdateAccountAsync(account, token: cancellationToken);
 
             if (result)
             {

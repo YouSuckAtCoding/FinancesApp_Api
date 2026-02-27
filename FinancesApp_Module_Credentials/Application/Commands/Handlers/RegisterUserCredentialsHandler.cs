@@ -20,7 +20,7 @@ public class RegisterUserCredentialsHandler(IUserCredentialsRepository credentia
 
         try
         {
-            var result = await _credentialsRepository.CreateUserCredentialsAsync(credentials, cancellationToken);
+            var result = await _credentialsRepository.CreateUserCredentialsAsync(credentials, token: cancellationToken);
 
             if (result != Guid.Empty)
                 _logger.LogInformation(

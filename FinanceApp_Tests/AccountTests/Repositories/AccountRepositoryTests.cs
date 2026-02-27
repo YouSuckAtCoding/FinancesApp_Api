@@ -2,6 +2,8 @@
 using FinancesApp_Module_Account.Application.Repositories;
 using FinancesApp_Module_Account.Domain;
 using FinancesApp_Module_Account.Domain.ValueObjects;
+using FinancesApp_Module_User.Application.Repositories;
+using FinancesApp_Module_User.Domain;
 using FinancesApp_Tests.Fixtures;
 using FluentAssertions;
 using Microsoft.Data.SqlClient;
@@ -12,6 +14,7 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
 {
     private readonly IDbConnectionFactory _connectionFactory;
     private readonly ICommandFactory _commandFactory;
+    private readonly IUserRepository _userRepository;
     private readonly IAccountRepository _accountRepository;
     
     private const string TableName = "[FinanceApp].[dbo].[Account]";
@@ -20,7 +23,8 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
     {
         _connectionFactory = fixture.ConnectionFactory;
         _commandFactory = fixture.CommandFactory;
-        _accountRepository = new AccountRepository(_connectionFactory, _commandFactory);     
+        _accountRepository = new AccountRepository(_connectionFactory, _commandFactory);
+        _userRepository = new UserRepository(_connectionFactory, _commandFactory);
     }
 
     [Fact]
@@ -29,10 +33,12 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
         // Arrange
         await _connectionFactory.ExecuteInScopeAsync(async connection =>
         {
+            Guid newUserId = await CreateNewUser(connection);
+
             await ClearAccountTable(connection);
 
             var account = new Account(
-                userId: Guid.NewGuid(),
+                userId: newUserId,
                 name: "Test Checking Account",
                 balance: new Money(1500.00m, "USD"),
                 type: AccountType.Checking
@@ -63,8 +69,10 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
         {
             await ClearAccountTable(connection);
 
+            Guid newUserId = await CreateNewUser(connection);
+
             var account = new Account(
-                userId: Guid.NewGuid(),
+                userId: newUserId,
                 name: "Test Credit Card",
                 balance: new Money(500.00m, "USD"),
                 type: AccountType.CreditCard
@@ -87,7 +95,7 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
     }
 
     [Fact]
-    public async Task CreateAccountAsync_Should_Insert_Account_Without_UserId()
+    public async Task CreateAccountAsync_Should_Not_Insert_Account_Without_UserId()
     {
         // Arrange
         await _connectionFactory.ExecuteInScopeAsync(async connection =>
@@ -102,15 +110,11 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
             );
 
             // Act
-            var result = await _accountRepository.CreateAccountAsync(account);
+            var result = async () => await _accountRepository.CreateAccountAsync(account);
 
             // Assert
-            result.Should().BeTrue();
+            await result.Should().ThrowAsync<SqlException>().WithMessage("*Cannot insert the value NULL into column 'UserId'*");
 
-            var retrieved = await GetAccountByIdAsync(account.Id, connection);
-            retrieved.Should().NotBeNull();
-            retrieved.UserId.Should().BeNull();
-            retrieved.Balance.Currency.Should().Be("BRL");
         });
     }
 
@@ -121,9 +125,11 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
         await _connectionFactory.ExecuteInScopeAsync(async connection =>
         {
             await ClearAccountTable(connection);
+            
+            Guid newUserId = await CreateNewUser(connection);
 
             var account = new Account(
-                userId: Guid.NewGuid(),
+                userId: newUserId,
                 name: "Original Name",
                 balance: new Money(1000.00m, "USD"),
                 type: AccountType.Checking
@@ -151,8 +157,10 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
         {
             await ClearAccountTable(connection);
 
+            Guid newUserId = await CreateNewUser(connection);
+
             var account = new Account(
-                userId: Guid.NewGuid(),
+                userId: newUserId,
                 name: "Test Account",
                 balance: new Money(1000.00m, "USD"),
                 type: AccountType.Checking
@@ -180,9 +188,10 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
         {
             await ClearAccountTable(connection);
 
+            Guid newUserId = await CreateNewUser(connection);
+
             var account = new Account(
-                id: Guid.NewGuid(),
-                userId: Guid.NewGuid(),
+                userId: newUserId,
                 name: "Test Account",
                 balance: new Money(100.00m, "USD"),
                 type: AccountType.Cash
@@ -212,9 +221,10 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
         {
             await ClearAccountTable(connection);
 
-            var account = new Account(
-                id: Guid.NewGuid(),
-                userId: Guid.NewGuid(),
+            Guid newUserId = await CreateNewUser(connection);
+
+            var account = new Account(                
+                userId: newUserId,
                 name: "Test Credit Card",
                 balance: new Money(500.00m, "USD"),
                 type: AccountType.CreditCard
@@ -267,9 +277,11 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
         await _connectionFactory.ExecuteInScopeAsync(async connection =>
         {
             await ClearAccountTable(connection);
+            
+            Guid newUserId = await CreateNewUser(connection);
 
             var account = new Account(
-                userId: Guid.NewGuid(),
+                userId: newUserId,
                 name: "Account To Delete",
                 balance: new Money(500.00m, "USD"),
                 type: AccountType.Cash
@@ -308,15 +320,15 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
         await _connectionFactory.ExecuteInScopeAsync(async connection =>
         {
             await ClearAccountTable(connection);
+            var accounts = new List<Account>();
 
-            var accounts = new List<Account>
+            for (int i = 1; i < 4; i++)
             {
-                new Account(Guid.NewGuid(), new Guid(), "Account 1", new Money(100.00m, "USD"), AccountType.Cash),
-                new Account(Guid.NewGuid(), new Guid(), "Account 2", new Money(200.00m, "USD"), AccountType.Checking),
-                new Account(Guid.NewGuid(), new Guid(), "Account 3", new Money(300.00m, "USD"), AccountType.CreditCard)
-            };
+                Guid newUserId = await CreateNewUser(connection);
 
-            // Act
+                accounts.Add(new Account(Guid.NewGuid(), newUserId, $"Account {i + 1}", new Money(100.00m * (i + 1), "USD"), (AccountType)i));
+            }
+            
             foreach (var account in accounts)
             {
                 var result = await _accountRepository.CreateAccountAsync(account);
@@ -337,9 +349,9 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
         {
             await ClearAccountTable(connection);
 
-            var userId = Guid.NewGuid();
+            Guid newUserId = await CreateNewUser(connection);
             var account = new Account(
-                userId: userId,
+                userId: newUserId,
                 name: "Test Account",
                 balance: new Money(1000.00m, "USD"),
                 type: AccountType.Checking
@@ -354,7 +366,7 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
 
             // Assert
             var retrieved = await GetAccountByIdAsync(account.Id, connection);
-            retrieved.UserId.Should().Be(userId);
+            retrieved.UserId.Should().Be(newUserId);
             retrieved.Type.Should().Be(AccountType.Checking);
             retrieved.CreatedAt.Should().BeCloseTo(originalCreatedAt, TimeSpan.FromSeconds(1));
         });
@@ -453,6 +465,21 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
                 return accounts;
             },
             default);
+    }
+    private async Task<Guid> CreateNewUser(SqlConnection connection)
+    {
+        var user = new User(
+            id: Guid.NewGuid(),
+            name: "John Doe",
+            email: $"{Guid.NewGuid().ToString().Replace("-", "")}@example.com",
+            registeredAt: DateTimeOffset.UtcNow,
+            modifiedAt: DateTimeOffset.UtcNow,
+            dateOfBirth: DateTimeOffset.UtcNow.AddYears(-30),
+            profileImage: "https://example.com/profile.jpg"
+        );
+
+        var result = await _userRepository.CreateUserAsync(user, connection);
+        return result;
     }
 
     private async Task ClearAccountTable(SqlConnection connection)

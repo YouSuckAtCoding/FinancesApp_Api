@@ -1,3 +1,0 @@
-EXEC sp_MSforeachtable 'ALTER TABLE ? NOCHECK CONSTRAINT ALL';
-EXEC sp_MSforeachtable 'DELETE FROM ?';
-EXEC sp_MSforeachtable 'ALTER TABLE ? CHECK CONSTRAINT ALL';
