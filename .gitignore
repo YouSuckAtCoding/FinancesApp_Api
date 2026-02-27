@@ -6,3 +6,10 @@ obj/
 .sql
 
 
+/FinanceApp_Tests/FinanceAppDb_V1_0.sql
+/FinanceApp_Tests/FinanceAppDb_V2.sql
+/FinanceApp_Tests/FinanceAppDb_V3.sql
+/FinanceApp_Tests/FinanceAppDb_V4.sql
+/FinanceApp_Tests/FinanceAppDb_V5.sql
+/FinanceApp_Tests/FinanceAppDb_V6.sql
+/FinanceApp_Tests/FinanceAppDb_V7.sql
