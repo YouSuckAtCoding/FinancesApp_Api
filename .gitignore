@@ -1,5 +1,6 @@
 *.dbmdl
 FinancesAppDb/
+FinancesAppDatabase/
 .vs/
 bin/
 obj/
