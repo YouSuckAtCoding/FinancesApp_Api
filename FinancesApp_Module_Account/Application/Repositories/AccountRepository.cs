@@ -29,7 +29,7 @@ public class AccountRepository : IAccountRepository
             var parameters = new Dictionary<string, object>
         {
             { "@Id", account.Id },
-            { "@UserId", (object?)account.UserId ?? DBNull.Value },
+            { "@UserId", account.UserId == Guid.Empty ? DBNull.Value : account.UserId},
             { "@Name", account.Name },
             { "@BalanceAmount", account.Balance.Amount },
             { "@BalanceCurrency", account.Balance.Currency },

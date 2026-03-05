@@ -19,35 +19,69 @@ public class UserCredentialsRepository : IUserCredentialsRepository
                                                        SqlConnection? connection = null,
                                                        CancellationToken token = default)
     {
+
         const string InsertCommandText = @"INSERT INTO [FinanceApp].[dbo].[UserCredentials]
                                             (UserId, Login, PasswordHash)
                                             OUTPUT INSERTED.Id
                                             VALUES
                                             (@UserId, @Login, @PasswordHash)";
 
-        var parameters = new Dictionary<string, object>
+        
+        return await _dbConnectionFactory.ExecuteInScopeAsync(async connection =>
         {
-            { "@UserId",       credentials.UserId },
-            { "@Login",        credentials.Login },
-            { "@PasswordHash", credentials.Password }
-        };
+            var parameters = new Dictionary<string, object>
+               {
+                   { "@UserId",       credentials.UserId },
+                   { "@Login",        credentials.Login },
+                   { "@PasswordHash", credentials.Password }
+               };
 
-        var insertedId = await _commandFactory.ExecuteAsync(
-            commandText: InsertCommandText,
-            options: new CreateSqlCommandOptions
-            {
-                Parameters = [.. parameters.Select(p => new SqlParameter(p.Key, p.Value))]
-            },
-            operation: async command =>
-            {
-                return (Guid)await command.ExecuteScalarAsync(token);
-            },
-            token);
+            var insertedId = await _commandFactory.ExecuteAsync(
+                commandText: InsertCommandText,
+                connection: connection,
+                options: new CreateSqlCommandOptions
+                {
+                    Parameters = [.. parameters.Select(p => new SqlParameter(p.Key, p.Value))]
+                },
+                operation: async command =>
+                {
+                    return (Guid)await command.ExecuteScalarAsync(token);
+                },
+                token);
 
-        return insertedId;
+            await UpdateUserSetCredentialsDate(insertedId, 
+                                               connection, 
+                                               token);
+
+            return insertedId;
+        }, token: token);
+
+
     }
 
-    public async Task<bool> UpdatePasswordAsync(Guid userId, 
+    public async Task UpdateUserSetCredentialsDate(Guid insertedId,
+                                                   SqlConnection? connection = null,
+                                                   CancellationToken token = default)
+    {
+        const string UpdateCommandText = @"UPDATE [FinanceApp].[dbo].[Users]
+                                           SET CredentialsSetAt = SYSDATETIMEOFFSET()
+                                           WHERE Id = @UserId";
+
+        await _commandFactory.ExecuteAsync(
+               commandText: UpdateCommandText,
+               connection: connection,
+               options: new CreateSqlCommandOptions
+               {
+                   Parameters = [new SqlParameter("@UserId", insertedId)]
+               },
+               operation: async command =>
+               {
+                  await command.ExecuteNonQueryAsync(token);
+               },
+               token);
+    }
+
+    public async Task<bool> UpdatePasswordAsync(Guid userId,
                                                 string newPasswordHash,
                                                 SqlConnection? connection = null,
                                                 CancellationToken token = default)

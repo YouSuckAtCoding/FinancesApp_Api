@@ -164,14 +164,11 @@ public class AccountReadRepositoryTests : IClassFixture<SqlFixture>
             retrieved.Count.Should().Be(activeAccountsExpected);
         });
     }
-
-    [Fact]
-    public async Task Should_Return_Accounts_By_Type()
+    [Theory]
+    [InlineData(AccountType.CreditCard, 2)]
+    [InlineData(AccountType.Cash, 3)]
+    public async Task Should_Return_Accounts_By_Type(AccountType accountType, int expectedCount)
     {
-
-        int expectedCreditCardTypeAccounts = 2;
-        int expectedCashTypeAccounts = 3;
-
         await _connectionFactory.ExecuteInScopeAsync(async connection =>
         {
             await ClearAccounTable(connection);
@@ -188,11 +185,11 @@ public class AccountReadRepositoryTests : IClassFixture<SqlFixture>
                 options: new CreateSqlCommandOptions
                 {
                     Parameters = [new("@Name", parameters["@Name"]),
-                                 new("@UserId", newUserId),
-                                 new("@BalanceAmount", parameters["@BalanceAmount"]),
-                                 new("@CreatedAt", parameters["@CreatedAt"]),
-                                 new("@Type", parameters["@Type"]),
-                                 new("@Status", parameters["@Status"])
+                             new("@UserId", newUserId),
+                             new("@BalanceAmount", parameters["@BalanceAmount"]),
+                             new("@CreatedAt", parameters["@CreatedAt"]),
+                             new("@Type", parameters["@Type"]),
+                             new("@Status", parameters["@Status"])
                    ]
                 },
                 operation: async command =>
@@ -201,9 +198,10 @@ public class AccountReadRepositoryTests : IClassFixture<SqlFixture>
                 },
                 default);
             }
-            var retrieved = await _accountReadRepository.GetAccountByType(AccountType.CreditCard,connection, default);
 
-            retrieved.Count.Should().Be(expectedCreditCardTypeAccounts);
+            var retrieved = await _accountReadRepository.GetAccountByType(accountType, connection, default);
+
+            retrieved.Count.Should().Be(expectedCount);
         });
     }
 

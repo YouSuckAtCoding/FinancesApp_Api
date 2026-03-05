@@ -4,7 +4,17 @@ using Microsoft.Data.SqlClient;
 namespace FinancesApp_Module_Credentials.Application.Repositories;
 public interface IUserCredentialsRepository
 {
-    Task<Guid> CreateUserCredentialsAsync(UserCredentials credentials, SqlConnection? connection = null, CancellationToken token = default);
-    Task<bool> DeleteUserCredentialsAsync(Guid userId, SqlConnection? connection = null, CancellationToken token = default);
-    Task<bool> UpdatePasswordAsync(Guid userId, string newPasswordHash, SqlConnection? connection = null, CancellationToken token = default);
+    Task<Guid> CreateUserCredentialsAsync(UserCredentials credentials, 
+                                          SqlConnection? connection = null, 
+                                          CancellationToken token = default);
+    Task<bool> DeleteUserCredentialsAsync(Guid userId, 
+                                          SqlConnection? connection = null, 
+                                          CancellationToken token = default);
+    Task<bool> UpdatePasswordAsync(Guid userId, 
+                                   string newPasswordHash, 
+                                   SqlConnection? connection = null, 
+                                   CancellationToken token = default);
+    Task UpdateUserSetCredentialsDate(Guid insertedId,
+                                      SqlConnection? connection = null,
+                                      CancellationToken token = default);
 }

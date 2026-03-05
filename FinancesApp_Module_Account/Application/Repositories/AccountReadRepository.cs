@@ -56,7 +56,7 @@ public class AccountReadRepository : IAccountReadRepository
                 {
                     return new Account(
                        id: reader.GetGuid("Id"),
-                       userId: reader.GetNullableGuid("UserId"),
+                       userId: reader.GetGuid("UserId"),
                        name: reader.GetString("Name"),
                        balance: new(reader.GetDecimal("BalanceAmount"), reader.GetString("BalanceCurrency")),
                        creditLimit: new(reader.GetDecimal("CreditLimitAmount"), reader.GetString("CreditLimitCurrency")),
@@ -112,7 +112,7 @@ public class AccountReadRepository : IAccountReadRepository
                     {
                         result.Add(new Account(
                             id: reader.GetGuid("Id"),
-                            userId: reader.GetNullableGuid("UserId"),
+                            userId: reader.GetGuid("UserId"),
                             name: reader.GetString("Name"),
                             balance: new(reader.GetDecimal("BalanceAmount"), reader.GetString("BalanceCurrency")),
                             creditLimit: new(reader.GetDecimal("CreditLimitAmount"), reader.GetString("CreditLimitCurrency")),
@@ -173,7 +173,7 @@ public class AccountReadRepository : IAccountReadRepository
                 {
                     result.Add(new Account(
                         id: reader.GetGuid("Id"),
-                        userId: reader.GetNullableGuid("UserId"),
+                        userId: reader.GetGuid("UserId"),
                         name: reader.GetString("Name"),
                         balance: new(reader.GetDecimal("BalanceAmount"), reader.GetString("BalanceCurrency")),
                         creditLimit: new(reader.GetDecimal("CreditLimitAmount"), reader.GetString("CreditLimitCurrency")),
@@ -233,7 +233,7 @@ public class AccountReadRepository : IAccountReadRepository
                 {
                     result.Add(new Account(
                         id: reader.GetGuid("Id"),
-                        userId: reader.GetNullableGuid("UserId"),
+                        userId: reader.GetGuid("UserId"),
                         name: reader.GetString("Name"),
                         balance: new(reader.GetDecimal("BalanceAmount"), reader.GetString("BalanceCurrency")),
                         creditLimit: new(reader.GetDecimal("CreditLimitAmount"), reader.GetString("CreditLimitCurrency")),

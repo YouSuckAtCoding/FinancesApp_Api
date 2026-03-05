@@ -42,7 +42,8 @@ public class UserRepository : IUserRepository
             },
             operation: async command =>
             {
-                Guid insertedId = (Guid)await command.ExecuteScalarAsync();
+                var res = await command.ExecuteScalarAsync();
+                Guid insertedId = res is null ? Guid.Empty : (Guid)res;
 
                 return insertedId;
             },
@@ -91,11 +92,6 @@ public class UserRepository : IUserRepository
     {
         const string DeleteCommandText = @"DELETE FROM [FinanceApp].[dbo].[Users] 
                                            WHERE Id = @Id";
-
-        var parameters = new Dictionary<string, object>
-        {
-          { "@Id", userId }
-        };
 
         var rowsAffected = await _commandFactory.ExecuteAsync(
             commandText: DeleteCommandText,

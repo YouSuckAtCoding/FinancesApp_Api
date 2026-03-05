@@ -8,7 +8,7 @@ public enum OperationType { MoneyTransaction, Payment, CreditPurchase }
 public sealed class Account
 {
     public Guid Id { get; }
-    public Guid? UserId{ get; }
+    public Guid UserId{ get; }
     public string Name { get; private set; } = "";
     public Money Balance{ get; private set; }
     public Money CreditLimit { get; private set; }
@@ -20,7 +20,7 @@ public sealed class Account
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset? ClosedAt { get; private set; }
     public Account(Guid id,
-                   Guid? userId,
+                   Guid userId,
                    string name,
                    Money balance,
                    AccountType type)
@@ -33,7 +33,7 @@ public sealed class Account
         CalculateCreditLimit(Balance);
         CurrentDebt = new Money(0m, balance.Currency);
     }
-    public Account(Guid? userId, 
+    public Account(Guid userId, 
                    string name,
                    Money balance, 
                    AccountType type)
@@ -50,15 +50,9 @@ public sealed class Account
     {
         
     }
-    private void ValidateInitalBalance(Money balance)
-    {
-        if(balance.Amount < 0 && Type != AccountType.CreditCard)
-            throw new InvalidOperationException("Initial balance cannot be negative for non credit-card accounts.");
-        Balance = balance;
-    }
 
     public Account(Guid id, 
-                   Guid? userId, 
+                   Guid userId, 
                    string name, 
                    Money balance, 
                    Money creditLimit, 
@@ -109,6 +103,17 @@ public sealed class Account
         Balance = newBalance;   
     }
 
+    public void Close()
+    {
+        EnsureActive();
+
+        if (!Balance.IsZero)
+            throw new InvalidOperationException("Account must have zero balance before closing.");
+
+        Status = AccountStatus.Closed;
+        ClosedAt = DateTimeOffset.UtcNow;
+    }
+
     private void CalculateCreditLimit(Money balance)
     {
 
@@ -129,14 +134,10 @@ public sealed class Account
         Money newDebt;
 
         if (opType == OperationType.Payment)
-        {
             newDebt = CurrentDebt.Subtract(delta.Amount < 0 ? delta.Negate() : delta);
-        }
         else
-        {
             newDebt = CurrentDebt.Add(delta.Amount < 0 ? delta.Negate() : delta);
-        }
-
+        
         if (newDebt.Amount > CreditLimit.Amount)
             throw new InvalidOperationException("Credit limit exceeded.");
 
@@ -172,15 +173,11 @@ public sealed class Account
             throw new InvalidOperationException("Account is closed.");
     }
 
-    public void Close()
+    private void ValidateInitalBalance(Money balance)
     {
-        EnsureActive();
-
-        if (!Balance.IsZero)
-            throw new InvalidOperationException("Account must have zero balance before closing.");
-
-        Status = AccountStatus.Closed;
-        ClosedAt = DateTimeOffset.UtcNow;
+        if (balance.Amount < 0 && Type != AccountType.CreditCard)
+            throw new InvalidOperationException("Initial balance cannot be negative for non credit-card accounts.");
+        Balance = balance;
     }
 
 

@@ -103,7 +103,7 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
             await ClearAccountTable(connection);
 
             var account = new Account(
-                userId: null,
+                userId: Guid.Empty,
                 name: "Test Cash Account",
                 balance: new Money(200.00m, "BRL"),
                 type: AccountType.Cash
@@ -397,7 +397,7 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
                 {
                     return new Account(
                         id: reader.GetGuid(reader.GetOrdinal("Id")),
-                        userId: reader.IsDBNull(reader.GetOrdinal("UserId")) ? null : reader.GetGuid(reader.GetOrdinal("UserId")),
+                        userId: reader.GetGuid(reader.GetOrdinal("UserId")),
                         name: reader.GetString(reader.GetOrdinal("Name")),
                         balance: new Money(
                             reader.GetDecimal(reader.GetOrdinal("BalanceAmount")),
@@ -417,7 +417,7 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
                     );
                 }
 
-                return new Account(); // Return empty account if not found
+                return new Account();
             },
             default);
     }
@@ -442,7 +442,7 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
                 {
                     accounts.Add(new Account(
                         id: reader.GetGuid(reader.GetOrdinal("Id")),
-                        userId: reader.IsDBNull(reader.GetOrdinal("UserId")) ? null : reader.GetGuid(reader.GetOrdinal("UserId")),
+                        userId: reader.GetGuid(reader.GetOrdinal("UserId")),
                         name: reader.GetString(reader.GetOrdinal("Name")),
                         balance: new Money(
                             reader.GetDecimal(reader.GetOrdinal("BalanceAmount")),

@@ -203,7 +203,8 @@ public class UserCredentialsRepositoryTests : IClassFixture<SqlFixture>
                         reader.GetGuid(reader.GetOrdinal("Id")),
                         reader.GetGuid(reader.GetOrdinal("UserId")),
                         reader.GetString(reader.GetOrdinal("Login")),
-                        reader.GetString(reader.GetOrdinal("PasswordHash"))));
+                        reader.GetString(reader.GetOrdinal("PasswordHash")))
+                    );
                 }
 
                 return list;
