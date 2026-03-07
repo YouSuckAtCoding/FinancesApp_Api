@@ -1,10 +1,13 @@
 ﻿using FinancesApp_Api.Contracts.Requests.CredentialsRequests;
 using FinancesApp_Api.Endpoints;
+using FinancesApp_Api.Jwt;
 using FinancesApp_Api.Mapper;
 using FinancesApp_CQRS.Interfaces;
 using FinancesApp_Module_Credentials.Application.Commands;
 using FinancesApp_Module_Credentials.Application.Queries;
 using FinancesApp_Module_Credentials.Domain;
+using FinancesApp_Module_User.Application.Queries;
+using FinancesApp_Module_User.Domain;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FinancesApp_Api.Controllers;
@@ -12,10 +15,12 @@ namespace FinancesApp_Api.Controllers;
 [ApiController]
 public class UserCredentialsController(IQueryHandler<GetUserCredentialsByUserId, UserCredentials> getByUserIdHandler,
                                        IQueryHandler<GetUserCredentialsByLogin, UserCredentials> getByLoginHandler,
+                                       IQueryHandler<GetUserByEmail, User> getUserByEmailHandler,
                                        ICommandHandler<RegisterUserCredentials, Guid> createCredentialsHandler,
                                        ICommandHandler<UpdateUserCredentials, bool> updateCredentialsHandler,
                                        ICommandHandler<DeleteUserCredentials, bool> deleteCredentialsHandler) : ControllerBase
 {
+    
     [HttpGet(CredentialsEndpoints.GetByUserId)]
     public async Task<IActionResult> GetByUserId([FromRoute] string userId, CancellationToken token = default)
     {
@@ -53,29 +58,45 @@ public class UserCredentialsController(IQueryHandler<GetUserCredentialsByUserId,
         return Ok(result);
     }
 
-    //[HttpPost(CredentialsEndpoints.Login)]
-    //public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken token = default)
-    //{
-    //    var query = new GetCredentialsByLogin {
-    //        Login = request.Login,
-    //        Password = request.PlainPassword
-    //    };
+    [HttpPost(CredentialsEndpoints.Login)]
+    public async Task<IActionResult> Login([FromBody] LoginRequest request, 
+                                           CancellationToken token = default)
+    {
 
-    //    var credentials = await _getByLoginHandler.Handle(query, token);
+        JwtService jwtService = new();
 
-    //    if (credentials is null || !credentials.VerifyPassword(request.PlainPassword))
-    //        return Unauthorized();
+        var query = new GetUserCredentialsByLogin
+        {
+            Login = request.Login,
+            Password = request.PlainPassword
+        };
 
-    //    var jwtToken = _tokenService.GenerateToken(credentials);
+        var credentials = await getByLoginHandler.Handle(query, token);
 
-    //    return Ok(new { Token = jwtToken });
-    //}
+        if (credentials is null || !credentials.VerifyPassword(request.PlainPassword))
+            return Unauthorized();
+
+        var jwtToken = jwtService.GenerateJwtToken(credentials, token);
+
+        return Ok(new { Token = jwtToken });
+    }
 
     [HttpPost(CredentialsEndpoints.CreateCredentials)]
     public async Task<IActionResult> CreateCredentials([FromBody] CreateCredentialsRequest request,
                                                         CancellationToken token = default)
     {
-        var command = new RegisterUserCredentials(request.MapToUserCredentials());
+        var userQuery = new GetUserByEmail
+        {
+            Email = request.Email
+        };
+            
+        var user = await getUserByEmailHandler.Handle(userQuery, token);
+
+        if (user == null)
+            return NotFound();
+
+        var command = new RegisterUserCredentials(request.MapToUserCredentials(user.Id));
+
         var result = await createCredentialsHandler.Handle(command, token);
 
         if (result == Guid.Empty)

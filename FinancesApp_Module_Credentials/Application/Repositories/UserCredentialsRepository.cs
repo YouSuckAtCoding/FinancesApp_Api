@@ -26,36 +26,41 @@ public class UserCredentialsRepository : IUserCredentialsRepository
                                             VALUES
                                             (@UserId, @Login, @PasswordHash)";
 
-        
-        return await _dbConnectionFactory.ExecuteInScopeAsync(async connection =>
+        try
         {
-            var parameters = new Dictionary<string, object>
-               {
+            return await _dbConnectionFactory.ExecuteInScopeAsync(async connection =>
+            {
+                var parameters = new Dictionary<string, object>
+                   {
                    { "@UserId",       credentials.UserId },
-                   { "@Login",        credentials.Login },
+                   { "@Login",        credentials.Email },
                    { "@PasswordHash", credentials.Password }
-               };
+                   };
 
-            var insertedId = await _commandFactory.ExecuteAsync(
-                commandText: InsertCommandText,
-                connection: connection,
-                options: new CreateSqlCommandOptions
-                {
-                    Parameters = [.. parameters.Select(p => new SqlParameter(p.Key, p.Value))]
-                },
-                operation: async command =>
-                {
-                    return (Guid)await command.ExecuteScalarAsync(token);
-                },
-                token);
+                var insertedId = await _commandFactory.ExecuteAsync(
+                    commandText: InsertCommandText,
+                    connection: connection,
+                    options: new CreateSqlCommandOptions
+                    {
+                        Parameters = [.. parameters.Select(p => new SqlParameter(p.Key, p.Value))]
+                    },
+                    operation: async command =>
+                    {
+                        return (Guid)await command.ExecuteScalarAsync(token);
+                    },
+                    token);
 
-            await UpdateUserSetCredentialsDate(insertedId, 
-                                               connection, 
-                                               token);
+                await UpdateUserSetCredentialsDate(insertedId,
+                                                   connection,
+                                                   token);
 
-            return insertedId;
-        }, token: token);
-
+                return insertedId;
+            }, token: token);
+        }
+        catch
+        {
+            throw;
+        }
 
     }
 

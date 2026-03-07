@@ -7,7 +7,7 @@ public class UserCredentials
 {
     public Guid Id { get; private set; }
     public Guid UserId { get; private set; }
-    public string Login { get; private set; } = string.Empty;
+    public string Email { get; private set; } = string.Empty;
     public string Password { get; private set; } = string.Empty;
 
     public UserCredentials()
@@ -19,18 +19,18 @@ public class UserCredentials
     {
         Id = id;
         UserId = userId;
-        Login = login;
+        Email = login;
         Password = passwordHash;
     }
     public UserCredentials(Guid userId, string login, string passwordHash)
     {
         UserId = userId;
-        Login = login;
-        Password = passwordHash;
+        Email = login;
+        SetPassword(passwordHash);
     }
     public UserCredentials(string login, string passwordHash)
     {
-        Login = login;
+        Email = login;
         ValidateLogin();
         SetPassword(passwordHash);
         
@@ -59,11 +59,11 @@ public class UserCredentials
 
     public void ValidateLogin()
     {
-        if (string.IsNullOrWhiteSpace(Login))
+        if (string.IsNullOrWhiteSpace(Email))
             throw new ArgumentException("Login cannot be empty.");
-        if (Login.Length < 3)
+        if (Email.Length < 3)
             throw new ArgumentException("Login must be at least 3 characters.");
-        if (!Regex.IsMatch(Login, @"^[a-zA-Z0-9._@]+$"))
+        if (!Regex.IsMatch(Email, @"^[a-zA-Z0-9._@]+$"))
             throw new ArgumentException("Login contains invalid characters.");
     }
 

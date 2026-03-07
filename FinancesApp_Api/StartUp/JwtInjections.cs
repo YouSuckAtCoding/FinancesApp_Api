@@ -1,0 +1,44 @@
+﻿using FinancesApp_Api.Jwt;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+
+namespace FinancesApp_Api.StartUp;
+
+public static class JwtInjections
+{
+    public static IServiceCollection AddJwtServices(this IServiceCollection services, IConfigurationManager configuration)
+    {
+
+        services.AddSingleton<JwtHandler>();
+
+        services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
+        {
+
+            var jwtHandler = new JwtHandler(configuration);
+
+            options.TokenValidationParameters = jwtHandler.GetTokenValidationParameters();
+
+            options.Events = new JwtBearerEvents
+            {
+                OnAuthenticationFailed = context =>
+                {
+                    Console.WriteLine($"Authentication failed: {context.Exception.Message}");
+                    return Task.CompletedTask;
+                },
+                OnTokenValidated = context =>
+                {
+                    Console.WriteLine($"Token validated for: {context.Principal?.Identity?.Name}");
+                    return Task.CompletedTask;
+                }
+            };
+        });
+
+        services.AddAuthorization();
+
+        return services;
+    }
+}

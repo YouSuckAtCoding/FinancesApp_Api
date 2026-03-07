@@ -19,7 +19,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FinancesApp_Module_User", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FinancesApp_Module_Credentials", "..\FinancesApp_Module_Credentials\FinancesApp_Module_Credentials.csproj", "{2F6EF278-7E0A-48F3-ABAE-113732EE5365}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Identity.Api", "..\..\..\..\Users\marco\Downloads\Nick-Chapsas-From-Zero-to-Hero-Rest-Api-master\Nick-Chapsas-From-Zero-to-Hero-Rest-Api-master\Helpers\Identity.Api\Identity.Api.csproj", "{455E3ACF-57F4-8CF7-DE20-574745E2BAB1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Identity.Api", "..\Identity.Api\Identity.Api.csproj", "{EAAA50B4-C500-23C1-5BD6-9E61F026C9B0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -61,10 +61,10 @@ Global
 		{2F6EF278-7E0A-48F3-ABAE-113732EE5365}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2F6EF278-7E0A-48F3-ABAE-113732EE5365}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2F6EF278-7E0A-48F3-ABAE-113732EE5365}.Release|Any CPU.Build.0 = Release|Any CPU
-		{455E3ACF-57F4-8CF7-DE20-574745E2BAB1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{455E3ACF-57F4-8CF7-DE20-574745E2BAB1}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{455E3ACF-57F4-8CF7-DE20-574745E2BAB1}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{455E3ACF-57F4-8CF7-DE20-574745E2BAB1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EAAA50B4-C500-23C1-5BD6-9E61F026C9B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EAAA50B4-C500-23C1-5BD6-9E61F026C9B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EAAA50B4-C500-23C1-5BD6-9E61F026C9B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EAAA50B4-C500-23C1-5BD6-9E61F026C9B0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

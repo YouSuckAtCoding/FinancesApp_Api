@@ -25,7 +25,7 @@ public class GetUserCredentialsByUserIdHandler(IUserCredentialsReadRepository cr
             if (result is not null)
                 _logger.LogInformation(
                     "Credentials found - UserID: {UserId}, Login: {Login}",
-                    result.UserId, result.Login);
+                    result.UserId, result.Email);
             else
                 _logger.LogWarning(
                     "No credentials found - UserID: {UserId}",

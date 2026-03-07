@@ -1,6 +1,6 @@
-﻿namespace Identity.Api;
+﻿namespace FinancesApp_Api.Jwt;
 
-public class TokenGenerationRequest
+public class GenerateJwtRequest
 {
     public Guid UserId { get; set; }
 

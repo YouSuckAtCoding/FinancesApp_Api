@@ -5,10 +5,11 @@ namespace FinancesApp_Api.Mapper;
 
 public static class CredentialsMapper
 {
-    public static UserCredentials MapToUserCredentials(this CreateCredentialsRequest request)
+    public static UserCredentials MapToUserCredentials(this CreateCredentialsRequest request, Guid userId)
     {
         return new UserCredentials(
-            request.Login,
+            userId,
+            request.Email,
             request.PlainPassword
         );
         

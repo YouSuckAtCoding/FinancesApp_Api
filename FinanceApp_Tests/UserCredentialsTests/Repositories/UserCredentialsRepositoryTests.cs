@@ -42,7 +42,7 @@ public class UserCredentialsRepositoryTests : IClassFixture<SqlFixture>
             retrieved.Should().NotBeNull();
             retrieved.Id.Should().NotBe(Guid.Empty);
             retrieved.UserId.Should().Be(credentials.UserId);
-            retrieved.Login.Should().Be(credentials.Login);
+            retrieved.Email.Should().Be(credentials.Email);
             retrieved.Password.Should().Be(credentials.Password);
         });
     }
@@ -107,7 +107,7 @@ public class UserCredentialsRepositoryTests : IClassFixture<SqlFixture>
             var retrieved = await GetCredentialsByUserIdAsync(credentials.UserId, connection);
             retrieved.Id.Should().NotBe(Guid.Empty);
             retrieved.UserId.Should().Be(credentials.UserId);
-            retrieved.Login.Should().Be(credentials.Login);
+            retrieved.Email.Should().Be(credentials.Email);
         });
     }
 

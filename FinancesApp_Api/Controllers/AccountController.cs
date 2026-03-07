@@ -4,6 +4,7 @@ using FinancesApp_CQRS.Interfaces;
 using FinancesApp_CQRS.Queries;
 using FinancesApp_Module_Account.Application.Queries;
 using FinancesApp_Module_Account.Domain;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FinancesApp_Api.Controllers;
@@ -14,6 +15,8 @@ public class AccountController(IQueryHandler<GetAccounts, IReadOnlyList<Account>
                                IQueryHandler<GetActiveAccounts, IReadOnlyList<Account>> getActiveAccountsHandler,
                                ICommandHandler<CreateAccount, bool> createAccountHandler) : ControllerBase
 {
+
+    [Authorize]
     [HttpGet(AccountEndpoints.GetAccounts)]
     public async Task<IActionResult> GetAccounts(CancellationToken token = default)
     {

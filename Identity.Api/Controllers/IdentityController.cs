@@ -25,7 +25,7 @@ public class IdentityController : ControllerBase
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new(JwtRegisteredClaimNames.Sub, request.Email),
+            new(JwtRegisteredClaimNames.Sub, request.Login),
             new("userid", request.UserId.ToString()),
             new(JwtRegisteredClaimNames.Iat,
                 DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(),

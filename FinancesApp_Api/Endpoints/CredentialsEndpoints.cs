@@ -8,4 +8,5 @@ public static class CredentialsEndpoints
     public const string CreateCredentials = $"{Base}";
     public const string UpdateCredentials = $"{Base}/{{userId}}";
     public const string DeleteCredentials = $"{Base}/{{userId}}";
+    public const string Login = $"{Base}/login";
 }

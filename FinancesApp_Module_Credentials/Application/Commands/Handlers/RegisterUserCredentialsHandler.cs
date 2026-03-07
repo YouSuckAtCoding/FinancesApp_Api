@@ -16,7 +16,7 @@ public class RegisterUserCredentialsHandler(IUserCredentialsRepository credentia
 
         _logger.LogInformation(
             "Creating credentials - UserID: {UserId}, Login: {Login}",
-            credentials.UserId, credentials.Login);
+            credentials.UserId, credentials.Email);
 
         try
         {
@@ -25,11 +25,11 @@ public class RegisterUserCredentialsHandler(IUserCredentialsRepository credentia
             if (result != Guid.Empty)
                 _logger.LogInformation(
                     "Credentials created successfully - ID: {Id}, UserID: {UserId}, Login: {Login}",
-                    result, credentials.UserId, credentials.Login);
+                    result, credentials.UserId, credentials.Email);
             else
                 _logger.LogWarning(
                     "Failed to create credentials - UserID: {UserId}, Login: {Login}",
-                    credentials.UserId, credentials.Login);
+                    credentials.UserId, credentials.Email);
 
             return result;
         }

@@ -21,6 +21,7 @@ public static class UserModuleInjections
 
         services.AddScoped<IQueryHandler<GetUserById, User>, GetUserByIdHandler>();
         services.AddScoped<IQueryHandler<GetUsers, IReadOnlyList<User>>, GetUsersHandler>();
+        services.AddScoped<IQueryHandler<GetUserByEmail, User>, GetUserByEmailHandler>();
 
         return services;
     }
