@@ -2,6 +2,8 @@
 using FinancesApp_Module_Account.Domain;
 using Microsoft.Data.SqlClient;
 
+namespace FinancesApp_Module_Account.Application.Repositories;
+
 public class AccountRepository : IAccountRepository
 {
     private readonly ICommandFactory _commandFactory;
@@ -15,35 +17,33 @@ public class AccountRepository : IAccountRepository
     }
 
     public async Task<bool> CreateAccountAsync(Account account,
-                                               SqlConnection? connection = null, 
+                                               SqlConnection? connection = null,
                                                CancellationToken token = default)
     {
         const string InsertCommandText = @"INSERT INTO [FinanceApp].[dbo].[Account] 
-                         (Id, UserId, Name, BalanceAmount, BalanceCurrency, CreditLimitAmount, CreditLimitCurrency,
-                             CurrentDebtAmount, CurrentDebtCurrency, Type, Status, PaymentDate, DueDate, CreatedAt, ClosedAt)
+                         (Id, UserId, BalanceAmount, BalanceCurrency, CreditLimitAmount, CreditLimitCurrency,
+                             CurrentDebtAmount, CurrentDebtCurrency, Type, Status, PaymentDate, DueDate, ClosedAt)
                          VALUES 
-                            (@Id, @UserId, @Name, @BalanceAmount, @BalanceCurrency, @CreditLimitAmount, @CreditLimitCurrency,
-                             @CurrentDebtAmount, @CurrentDebtCurrency, @Type, @Status, @PaymentDate, @DueDate, @CreatedAt, @ClosedAt)";
+                            (@Id, @UserId, @BalanceAmount, @BalanceCurrency, @CreditLimitAmount, @CreditLimitCurrency,
+                             @CurrentDebtAmount, @CurrentDebtCurrency, @Type, @Status, @PaymentDate, @DueDate, @ClosedAt)";
         try
         {
             var parameters = new Dictionary<string, object>
-        {
-            { "@Id", account.Id },
-            { "@UserId", account.UserId == Guid.Empty ? DBNull.Value : account.UserId},
-            { "@Name", account.Name },
-            { "@BalanceAmount", account.Balance.Amount },
-            { "@BalanceCurrency", account.Balance.Currency },
-            { "@CreditLimitAmount", account.CreditLimit.Amount },
-            { "@CreditLimitCurrency", account.CreditLimit.Currency },
-            { "@CurrentDebtAmount", account.CurrentDebt.Amount },
-            { "@CurrentDebtCurrency", account.CurrentDebt.Currency },
-            { "@Type", account.Type },
-            { "@Status", account.Status },
-            { "@PaymentDate", (object?)account.PaymentDate ?? DBNull.Value },
-            { "@DueDate", (object?)account.DueDate ?? DBNull.Value },
-            { "@CreatedAt", account.CreatedAt },
-            { "@ClosedAt", (object?)account.ClosedAt ?? DBNull.Value }
-        };
+            {
+                { "@Id", account.Id },
+                { "@UserId", account.UserId},
+                { "@BalanceAmount", account.Balance.Amount },
+                { "@BalanceCurrency", account.Balance.Currency },
+                { "@CreditLimitAmount", account.CreditLimit.Amount },
+                { "@CreditLimitCurrency", account.CreditLimit.Currency },
+                { "@CurrentDebtAmount", account.CurrentDebt.Amount },
+                { "@CurrentDebtCurrency", account.CurrentDebt.Currency },
+                { "@Type", account.Type },
+                { "@Status", account.Status },
+                { "@PaymentDate", (object?)account.PaymentDate ?? DBNull.Value },
+                { "@DueDate", DBNull.Value },
+                { "@ClosedAt", DBNull.Value }
+            };
 
             var rowsAffected = await _commandFactory.ExecuteAsync(
                 commandText: InsertCommandText,
@@ -67,8 +67,7 @@ public class AccountRepository : IAccountRepository
                                                CancellationToken token = default)
     {
         const string UpdateCommandText = @"UPDATE [FinanceApp].[dbo].[Account]
-                         SET Name = @Name,
-                             BalanceAmount = @BalanceAmount,
+                         SET BalanceAmount = @BalanceAmount,
                              BalanceCurrency = @BalanceCurrency,
                              CreditLimitAmount = @CreditLimitAmount,
                              CreditLimitCurrency = @CreditLimitCurrency,
@@ -77,13 +76,13 @@ public class AccountRepository : IAccountRepository
                              Status = @Status,
                              PaymentDate = @PaymentDate,
                              DueDate = @DueDate,
+                             UpdatedAt = @UpdatedAt,
                              ClosedAt = @ClosedAt
                          WHERE Id = @Id";
 
         var parameters = new Dictionary<string, object>
         {
             { "@Id", account.Id },
-            { "@Name", account.Name },
             { "@BalanceAmount", account.Balance.Amount },
             { "@BalanceCurrency", account.Balance.Currency },
             { "@CreditLimitAmount", account.CreditLimit.Amount },
@@ -93,6 +92,7 @@ public class AccountRepository : IAccountRepository
             { "@Status", account.Status },
             { "@PaymentDate", (object?)account.PaymentDate ?? DBNull.Value },
             { "@DueDate", (object?)account.DueDate ?? DBNull.Value },
+            { "@UpdatedAt", DateTimeOffset.UtcNow },
             { "@ClosedAt", (object?)account.ClosedAt ?? DBNull.Value }
         };
 

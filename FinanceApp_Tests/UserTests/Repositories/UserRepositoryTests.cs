@@ -14,6 +14,7 @@ public class UserRepositoryTests : IClassFixture<SqlFixture>
     private readonly IUserRepository _userRepository;
 
     private const string TableName = "[FinanceApp].[dbo].[Users]";
+    private const string CredentialsTableName = "[FinanceApp].[dbo].[UserCredentials]";
 
     public UserRepositoryTests(SqlFixture fixture)
     {
@@ -27,6 +28,7 @@ public class UserRepositoryTests : IClassFixture<SqlFixture>
     {
         await _connectionFactory.ExecuteInScopeAsync(async connection =>
         {
+            await ClearUserCredentialsTable(connection);
             await ClearUserTable(connection);
 
             var user = new User(
@@ -57,6 +59,7 @@ public class UserRepositoryTests : IClassFixture<SqlFixture>
     {
         await _connectionFactory.ExecuteInScopeAsync(async connection =>
         {
+            await ClearUserCredentialsTable(connection);
             await ClearUserTable(connection);
 
             var user = new User(
@@ -84,6 +87,7 @@ public class UserRepositoryTests : IClassFixture<SqlFixture>
     {
         await _connectionFactory.ExecuteInScopeAsync(async connection =>
         {
+            await ClearUserCredentialsTable(connection);
             await ClearUserTable(connection);
 
             var dateOfBirth = DateTimeOffset.UtcNow.AddYears(-40);
@@ -111,6 +115,7 @@ public class UserRepositoryTests : IClassFixture<SqlFixture>
     {
         await _connectionFactory.ExecuteInScopeAsync(async connection =>
         {
+            await ClearUserCredentialsTable(connection);
             await ClearUserTable(connection);
 
             var user = new User(
@@ -149,6 +154,7 @@ public class UserRepositoryTests : IClassFixture<SqlFixture>
     {
         await _connectionFactory.ExecuteInScopeAsync(async connection =>
         {
+            await ClearUserCredentialsTable(connection);
             await ClearUserTable(connection);
 
             var user = new User(
@@ -187,6 +193,7 @@ public class UserRepositoryTests : IClassFixture<SqlFixture>
     {
         await _connectionFactory.ExecuteInScopeAsync(async connection =>
         {
+            await ClearUserCredentialsTable(connection);
             await ClearUserTable(connection);
 
             var user = new User(
@@ -225,6 +232,7 @@ public class UserRepositoryTests : IClassFixture<SqlFixture>
     {
         await _connectionFactory.ExecuteInScopeAsync(async connection =>
         {
+            await ClearUserCredentialsTable(connection);
             await ClearUserTable(connection);
 
             var user = new User(
@@ -284,6 +292,7 @@ public class UserRepositoryTests : IClassFixture<SqlFixture>
     {
         await _connectionFactory.ExecuteInScopeAsync(async connection =>
         {
+            await ClearUserCredentialsTable(connection);
             await ClearUserTable(connection);
 
             var user = new User(
@@ -322,6 +331,7 @@ public class UserRepositoryTests : IClassFixture<SqlFixture>
     {
         await _connectionFactory.ExecuteInScopeAsync(async connection =>
         {
+            await ClearUserCredentialsTable(connection);
             await ClearUserTable(connection);
 
             var users = new List<User>
@@ -347,6 +357,7 @@ public class UserRepositoryTests : IClassFixture<SqlFixture>
     {
         await _connectionFactory.ExecuteInScopeAsync(async connection =>
         {
+            await ClearUserCredentialsTable(connection);
             await ClearUserTable(connection);
 
             var user = new User(
@@ -384,6 +395,7 @@ public class UserRepositoryTests : IClassFixture<SqlFixture>
     {
         await _connectionFactory.ExecuteInScopeAsync(async connection =>
         {
+            await ClearUserCredentialsTable(connection);
             await ClearUserTable(connection);
 
             var user = new User(
@@ -489,6 +501,18 @@ public class UserRepositoryTests : IClassFixture<SqlFixture>
     {
         await _commandFactory.ExecuteAsync(
             commandText: $"DELETE FROM {TableName}",
+            connection: connection,
+            options: new CreateSqlCommandOptions(),
+            operation: async command =>
+            {
+                await command.ExecuteNonQueryAsync();
+            },
+            default);
+    }
+    private async Task ClearUserCredentialsTable(Microsoft.Data.SqlClient.SqlConnection connection)
+    {
+        await _commandFactory.ExecuteAsync(
+            commandText: $"DELETE FROM {CredentialsTableName}",
             connection: connection,
             options: new CreateSqlCommandOptions(),
             operation: async command =>

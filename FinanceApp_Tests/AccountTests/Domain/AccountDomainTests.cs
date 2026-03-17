@@ -5,43 +5,12 @@ using FinancesApp_Module_Account.Domain.ValueObjects;
 namespace FinancesApp_Tests.AccountTests.Domain;
 public class AccountDomainTests
 {
-    [Fact]
-    public void Should_Update_Account_Name_When_Active()
-    {
-        var account = new Account(
-            Guid.NewGuid(),
-            "My Account",
-            new Money(100, "USD"),
-            AccountType.Checking
-        );
-        
-        account.UpdateName("Updated Account Name");
-        
-        Assert.Equal("Updated Account Name", account.Name);
-    }
-
-    [Fact]
-    public void Should_Throw_InvalidOperationException_When_Update_Inactive_Account_Name()
-    {
-        var account = new Account(
-            Guid.NewGuid(),
-            "My Account",
-            new Money(0, "USD"),
-            AccountType.Checking
-        );
-        account.Close();
-        
-        var action = () => account.UpdateName("Updated Account Name");
-
-        action.Should().Throw<InvalidOperationException>()
-            .WithMessage("Account is closed.");
-    }
+   
     [Fact]
     public void Should_Throw_InvalidOperationException_When_Close_Account_That_Has_Balance()
     {
         var account = new Account(
             Guid.NewGuid(),
-            "My Account",
             new Money(100, "USD"),
             AccountType.Checking
         );
@@ -56,8 +25,6 @@ public class AccountDomainTests
     {
         var account = new Account(
             Guid.NewGuid(),
-            Guid.NewGuid(),
-            "My Account",
             new Money(100, "USD"),
             AccountType.Checking
         );
@@ -72,7 +39,6 @@ public class AccountDomainTests
     {
         var account = new Account(
             Guid.NewGuid(),
-            "My Account",
             new Money(100, "USD"),
             AccountType.Checking
         );
@@ -87,7 +53,6 @@ public class AccountDomainTests
     {
         var account = new Account(
             Guid.NewGuid(),
-            "My Account",
             new Money(100, "USD"),
             AccountType.Checking
         );

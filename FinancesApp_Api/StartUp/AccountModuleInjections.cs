@@ -20,6 +20,7 @@ public static class AccountModuleInjections
         services.AddScoped<ICommandHandler<CreateAccount, bool>, CreateAccountHandler>();
         services.AddScoped<ICommandHandler<UpdateAccount, bool>, UpdateAccountHandler>();
         services.AddScoped<ICommandHandler<DeleteAccount, bool>, DeleteAccountHandler>();
+        services.AddScoped<ICommandHandler<ApplyDelta, bool>, ApplyDeltaHandler>();
 
         services.AddScoped<IQueryHandler<GetAccountById, Account>, GetAccountByIdHandler>();
         services.AddScoped<IQueryHandler<GetAccounts, IReadOnlyList<Account>>, GetAccountsHandler>();

@@ -1,7 +1,7 @@
 ﻿using FinancesApp_CQRS.Interfaces;
 
 namespace FinancesApp_CQRS.Dispatchers;
-public class EventDispatcher
+public class EventDispatcher : IEventDispatcher
 {
     private readonly Dictionary<Type, List<object>> _handlers = [];
 

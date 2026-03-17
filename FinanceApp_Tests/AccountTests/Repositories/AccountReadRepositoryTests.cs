@@ -18,9 +18,9 @@ public class AccountReadRepositoryTests : IClassFixture<SqlFixture>
 
     private const string TableName = "[FinanceApp].[dbo].[Account]";
     private const string InsertCommandText = 
-        $" INSERT INTO {TableName} (Name, UserId, BalanceAmount, CreatedAt, Type, Status)" +
+        $" INSERT INTO {TableName} (UserId, BalanceAmount, CreatedAt, Type, Status)" +
         " OUTPUT INSERTED.Id " +
-        " VALUES (@Name, @UserId, @BalanceAmount, @CreatedAt, @Type, @Status)";
+        " VALUES (@UserId, @BalanceAmount, @CreatedAt, @Type, @Status)";
 
     public AccountReadRepositoryTests(SqlFixture fixture)
     {
@@ -59,8 +59,7 @@ public class AccountReadRepositoryTests : IClassFixture<SqlFixture>
             connection: connection,
             options: new CreateSqlCommandOptions
             {
-                Parameters = [ new("@Name", parameters["@Name"]),
-                               new("@UserId", newUserId),
+                Parameters = [ new("@UserId", newUserId),
                                new("@BalanceAmount", parameters["@BalanceAmount"]),
                                new("@CreatedAt", parameters["@CreatedAt"]),
                                new("@Type", parameters["@Type"]),
@@ -105,8 +104,7 @@ public class AccountReadRepositoryTests : IClassFixture<SqlFixture>
                 connection: connection,
                 options: new CreateSqlCommandOptions
                 {
-                  Parameters = [ new("@Name", parameters["@Name"]),
-                                 new("@UserId", newUserId),
+                  Parameters = [ new("@UserId", newUserId),
                                  new("@BalanceAmount", parameters["@BalanceAmount"]),
                                  new("@CreatedAt", parameters["@CreatedAt"]),
                                  new("@Type", parameters["@Type"]),
@@ -145,12 +143,11 @@ public class AccountReadRepositoryTests : IClassFixture<SqlFixture>
                 connection: connection,
                 options: new CreateSqlCommandOptions
                 {
-                    Parameters = [new("@Name", parameters["@Name"]),
-                                 new("@UserId", newUserId),
-                                 new("@BalanceAmount", parameters["@BalanceAmount"]),
-                                 new("@CreatedAt", parameters["@CreatedAt"]),
-                                 new("@Type", parameters["@Type"]),
-                                 new("@Status", parameters["@Status"])
+                    Parameters = [new("@UserId", newUserId),
+                                  new("@BalanceAmount", parameters["@BalanceAmount"]),
+                                  new("@CreatedAt", parameters["@CreatedAt"]),
+                                  new("@Type", parameters["@Type"]),
+                                  new("@Status", parameters["@Status"])
                    ]
                 },
                 operation: async command =>
@@ -184,12 +181,11 @@ public class AccountReadRepositoryTests : IClassFixture<SqlFixture>
                 connection: connection,
                 options: new CreateSqlCommandOptions
                 {
-                    Parameters = [new("@Name", parameters["@Name"]),
-                             new("@UserId", newUserId),
-                             new("@BalanceAmount", parameters["@BalanceAmount"]),
-                             new("@CreatedAt", parameters["@CreatedAt"]),
-                             new("@Type", parameters["@Type"]),
-                             new("@Status", parameters["@Status"])
+                    Parameters = [new("@UserId", newUserId),
+                                  new("@BalanceAmount", parameters["@BalanceAmount"]),
+                                  new("@CreatedAt", parameters["@CreatedAt"]),
+                                  new("@Type", parameters["@Type"]),
+                                  new("@Status", parameters["@Status"])
                    ]
                 },
                 operation: async command =>
@@ -205,7 +201,7 @@ public class AccountReadRepositoryTests : IClassFixture<SqlFixture>
         });
     }
 
-    private async Task ClearAccounTable(Microsoft.Data.SqlClient.SqlConnection connection)
+    private async Task ClearAccounTable(SqlConnection connection)
     {
         await _commandFactory.ExecuteAsync(
                         commandText: $"Delete from {TableName}",
@@ -236,7 +232,6 @@ public class AccountReadRepositoryTests : IClassFixture<SqlFixture>
     {
         return new Dictionary<string, object>
         {
-            { "@Name", "Test Account" },
             { "@BalanceAmount", 1000.00m },
             { "@CreatedAt", DateTimeOffset.UtcNow },
             { "@Type", pos % 2 == 0 ? AccountType.Cash : AccountType.CreditCard} ,

@@ -26,14 +26,14 @@ public class GetAccountByIdHandlerTests
     [Fact]
     public async Task Should_Return_Account_When_Found()
     {
-        var accountId = Guid.NewGuid();
+        
         var expectedAccount = new Account(
-            accountId,
             new Guid(),
-            "Test Account",
             new Money(1000, "USD"),
             AccountType.Checking
         );
+
+        var accountId = expectedAccount.Id;
 
         _mockRepository.GetAccountById(accountId, token: Arg.Any<CancellationToken>())
             .Returns(expectedAccount);
@@ -44,7 +44,6 @@ public class GetAccountByIdHandlerTests
 
         result.Should().NotBeNull();
         result.Id.Should().Be(accountId);
-        result.Name.Should().Be("Test Account");
         await _mockRepository.Received(1).GetAccountById(accountId, token: Arg.Any<CancellationToken>());
     }
 

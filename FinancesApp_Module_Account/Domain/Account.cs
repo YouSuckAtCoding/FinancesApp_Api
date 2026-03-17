@@ -1,51 +1,45 @@
-﻿using FinancesApp_Module_Account.Domain.ValueObjects;
+﻿using FinancesApp_CQRS.Interfaces;
+using FinancesApp_Module_Account.Domain.Events;
+using FinancesApp_Module_Account.Domain.ValueObjects;
 
 namespace FinancesApp_Module_Account.Domain;
 
 public enum AccountType { Cash, Checking, CreditCard }
 public enum AccountStatus { Active, Closed }
 public enum OperationType { MoneyTransaction, Payment, CreditPurchase }
-public sealed class Account
+public enum TransactionType { Withdraw, Deposit }
+public sealed class Account : AggregateRoot
 {
-    public Guid Id { get; }
-    public Guid UserId{ get; }
-    public string Name { get; private set; } = "";
+    public Guid Id { get; private set; }
+    public Guid UserId{ get; private set; }    
     public Money Balance{ get; private set; }
     public Money CreditLimit { get; private set; }
     public Money CurrentDebt { get; private set; }   
     public DateTimeOffset? PaymentDate { get; private set; }
     public DateTimeOffset? DueDate { get; private set; }
     public AccountStatus Status { get; private set; }
-    public AccountType Type{ get; }
+    public AccountType Type{ get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset? ClosedAt { get; private set; }
+    public DateTimeOffset UpdatedAt { get; set; }
+
     public Account(Guid id,
                    Guid userId,
-                   string name,
                    Money balance,
-                   AccountType type)
-    {
-        Id = id;
-        UserId = userId;
-        Name = name;
-        Type = type;
-        ValidateInitalBalance(balance);
-        CalculateCreditLimit(Balance);
-        CurrentDebt = new Money(0m, balance.Currency);
-    }
-    public Account(Guid userId, 
-                   string name,
-                   Money balance, 
-                   AccountType type)
-    {
-        UserId = userId;
-        Name = name;
-        Type = type;
-        ValidateInitalBalance(balance);
-        CalculateCreditLimit(Balance);
-        CurrentDebt = new Money(0m, balance.Currency);
-    }
+                   AccountType type) 
+        => Raise(new UpdatedAccountEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, id, userId, balance, new Money(0m, balance.Currency), type));
+    
 
+    public Account(Guid userId,
+                   Money balance,
+                   AccountType type) 
+        => Raise(new AccountCreatedEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, Guid.NewGuid(), userId, balance, new Money(0m, balance.Currency) ,type));
+    
+    public Account(Guid accountId)
+    {
+        Id = accountId;  
+    }
+   
     public Account()
     {
         
@@ -53,7 +47,6 @@ public sealed class Account
 
     public Account(Guid id, 
                    Guid userId, 
-                   string name, 
                    Money balance, 
                    Money creditLimit, 
                    Money currentDebt,
@@ -66,7 +59,6 @@ public sealed class Account
     {
         Id = id;
         UserId = userId;
-        Name = name;
         Balance = balance;
         CreditLimit = creditLimit;
         CurrentDebt = currentDebt;
@@ -78,13 +70,9 @@ public sealed class Account
         ClosedAt = closedAt;
     }
 
-    public void UpdateName(string name)
-    {
-        EnsureActive();
-        Name = name;
-    }
-
-    public void ApplyDelta(Money delta, OperationType opType = OperationType.MoneyTransaction)
+    public void ApplyDelta(Money delta, 
+                           OperationType opType = OperationType.MoneyTransaction,
+                           TransactionType transactionType = TransactionType.Withdraw)
     {
         EnsureActive();
         EnsureCurrency(delta.Currency);
@@ -94,13 +82,12 @@ public sealed class Account
             UpdateCredit(delta, opType);
             return;
         }
+        
+        if (transactionType == TransactionType.Withdraw)
+            Raise(new WithdrawEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, Id, UserId, delta.Amount, DateTimeOffset.UtcNow));
+        else
+            Raise(new DepositEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, Id, UserId, delta.Amount, DateTimeOffset.UtcNow));
 
-        var newBalance = Balance.Add(delta);
-
-        if (Type == AccountType.Cash && newBalance.Amount < 0)
-            throw new InvalidOperationException("Insufficient funds in cash account."); 
-
-        Balance = newBalance;   
     }
 
     public void Close()
@@ -110,8 +97,7 @@ public sealed class Account
         if (!Balance.IsZero)
             throw new InvalidOperationException("Account must have zero balance before closing.");
 
-        Status = AccountStatus.Closed;
-        ClosedAt = DateTimeOffset.UtcNow;
+        Raise(new AccountClosedEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, Id, UserId));
     }
 
     private void CalculateCreditLimit(Money balance)
@@ -124,9 +110,74 @@ public sealed class Account
         }
 
         if (balance.Amount <= 350)
-            CreditLimit = new Money(500m, balance.Currency);
+            Raise(new CalculatedCreditLimitEvent(Guid.NewGuid(),
+                                                 DateTimeOffset.UtcNow,
+                                                 Id,
+                                                 UserId,
+                                                 new Money(500m, balance.Currency)));
         else
-            CreditLimit = new Money(decimal.Ceiling(balance.Amount * 2), balance.Currency);
+            Raise(new CalculatedCreditLimitEvent(Guid.NewGuid(),
+                                                 DateTimeOffset.UtcNow,
+                                                 Id,
+                                                 UserId,
+                                                 new Money(decimal.Ceiling(balance.Amount * 2), balance.Currency)));
+    }
+
+    protected override void Apply(IDomainEvent evt)
+    {
+        switch (evt)
+        {
+            case DepositEvent e:
+                Balance = Balance.Add(new Money(e.Value, Balance.Currency));
+                break;
+            case WithdrawEvent e:
+                var newBalance = Balance.Subtract(new Money(e.Value, Balance.Currency));
+                
+                if (Type == AccountType.Cash && newBalance.Amount < 0)
+                    throw new InvalidOperationException("Insufficient funds in cash account.");
+
+                Balance = newBalance;
+                break;
+            case CalculatedCreditLimitEvent e:
+                CreditLimit = new Money(e.Value.Amount, e.Value.Currency);
+                break;
+            case CreditUpdatedEvent e:
+                CurrentDebt = new Money(e.Value.Amount, e.Value.Currency);
+                break;
+            case AccountClosedEvent:
+                Status = AccountStatus.Closed;
+                ClosedAt = DateTimeOffset.UtcNow;
+                break;
+            case AccountCreatedEvent e:
+                Id = e.Id;
+                UserId = e.userId;
+                Type = e.type;
+                if (ValidateInitialBalance(e.balance))
+                    Balance = e.balance;
+                CalculateCreditLimit(Balance);
+                CurrentDebt = e.debt;
+                CreatedAt = e.Timestamp;
+                break;
+            case UpdatedAccountEvent e:
+                Id = e.Id;
+                UserId = e.userId;
+                Type = e.type;
+                if (ValidateInitialBalance(e.balance))
+                    Balance = e.balance;
+                CalculateCreditLimit(Balance);
+                CurrentDebt = e.debt;
+                UpdatedAt = e.Timestamp;
+                break;
+            default:
+                throw new NotImplementedException(string.Format("No event handler for selected operation {0}", evt.GetType().Name));
+        }
+    }
+
+    public override void RebuildFromEvents(List<IDomainEvent> events)
+    {
+        foreach (var evt in events)
+            Apply(evt);
+        SetAggregateVersions(events.Count);
     }
 
     private void UpdateCredit(Money delta, OperationType opType)
@@ -141,12 +192,11 @@ public sealed class Account
         if (newDebt.Amount > CreditLimit.Amount)
             throw new InvalidOperationException("Credit limit exceeded.");
 
-        if (newDebt.Amount < 0)
-            CurrentDebt = new Money(0m, delta.Currency);
-        else
-            CurrentDebt = newDebt;
-    }
+        var debt = newDebt.Amount < 0 ? new Money(0m, delta.Currency) : newDebt;
 
+        Raise(new CreditUpdatedEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, Id, UserId, debt, CurrentDebt, newDebt));
+    }
+  
     private void EnsureCurrency(string currency)
     {
         if (string.IsNullOrWhiteSpace(currency))
@@ -173,12 +223,10 @@ public sealed class Account
             throw new InvalidOperationException("Account is closed.");
     }
 
-    private void ValidateInitalBalance(Money balance)
+    private bool ValidateInitialBalance(Money balance)
     {
         if (balance.Amount < 0 && Type != AccountType.CreditCard)
             throw new InvalidOperationException("Initial balance cannot be negative for non credit-card accounts.");
-        Balance = balance;
+        return true;
     }
-
-
 }

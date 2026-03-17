@@ -11,4 +11,8 @@ public static class AccountEndpoints
     public const string GetActiveAccounts = $"{Base}/active";
 
     public const string CreateAccount = Base;
+
+    public const string UpdateAccount = $"{Base}/{{id}}";
+
+    public const string ApplyDeltaEndpoint = $"{Base}/delta";
 }

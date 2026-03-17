@@ -8,6 +8,5 @@ namespace FinancesApp_CQRS.Interfaces;
 public interface IDomainEvent
 {
     Guid EventId { get; }
-    Guid AccountId { get; }
-    DateTime Timestamp { get; }
+    DateTimeOffset Timestamp { get; }
 }

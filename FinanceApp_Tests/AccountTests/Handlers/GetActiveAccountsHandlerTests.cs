@@ -29,8 +29,8 @@ public class GetActiveAccountsHandlerTests
         // Arrange
         var expectedAccounts = new List<Account>
         {
-            new Account(Guid.NewGuid(), "Active Account 1", new Money(1000, "USD"), AccountType.Checking),
-            new Account(Guid.NewGuid(), "Active Account 2", new Money(2000, "USD"), AccountType.CreditCard)
+            new Account(Guid.NewGuid(), new Money(1000, "USD"), AccountType.Checking),
+            new Account(Guid.NewGuid(), new Money(2000, "USD"), AccountType.CreditCard)
         }.AsReadOnly();
 
         _mockRepository.GetActiveAccounts(token: Arg.Any<CancellationToken>())
@@ -105,7 +105,7 @@ public class GetActiveAccountsHandlerTests
         // Arrange
         var activeAccounts = new List<Account>
         {
-            new Account(Guid.NewGuid(), "Active Account", new Money(1000, "USD"), AccountType.Checking)
+            new Account(Guid.NewGuid(), new Money(1000, "USD"), AccountType.Checking)
         }.AsReadOnly();
 
         _mockRepository.GetActiveAccounts(token: Arg.Any<CancellationToken>())

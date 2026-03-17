@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace FinancesApp_Module_Account.Domain.ValueObjects;
@@ -12,7 +13,8 @@ public readonly record struct Money
     public decimal Amount { get; }
     public string Currency { get; } 
     public bool IsZero => Amount == 0m;
-
+    
+    [JsonConstructor]
     public Money(decimal amount, string currency)
     {
         if (string.IsNullOrWhiteSpace(currency))

@@ -13,9 +13,10 @@ public class UserReadRepositoryTests : IClassFixture<SqlFixture>
     private readonly IUserReadRepository _userReadRepository;
     private readonly SqlFixture _fixture;
 
-    private const string TableName = "[FinanceApp].[dbo].[Users]";
+    private const string UsersTableName = "[FinanceApp].[dbo].[Users]";
+    private const string CredentialsTableName = "[FinanceApp].[dbo].[UserCredentials]";
     private const string InsertCommandText =
-        $" INSERT INTO {TableName} (Id, Name, Email, RegisteredAt, ModifiedAt, DateOfBirth, ProfileImage)" +
+        $" INSERT INTO {UsersTableName} (Id, Name, Email, RegisteredAt, ModifiedAt, DateOfBirth, ProfileImage)" +
         " OUTPUT INSERTED.Id " +
         " VALUES (@Id, @Name, @Email, @RegisteredAt, @ModifiedAt, @DateOfBirth, @ProfileImage)";
 
@@ -31,7 +32,7 @@ public class UserReadRepositoryTests : IClassFixture<SqlFixture>
     public async Task Should_Reach_TestDatabase_And_Try_To_Retrieve_A_User()
     {
         var result = await _commandFactory.ExecuteAsync(
-            commandText: $"Select TOP 1 * from {TableName}",
+            commandText: $"Select TOP 1 * from {UsersTableName}",
             options: new CreateSqlCommandOptions(),
             operation: async command =>
             {
@@ -49,7 +50,9 @@ public class UserReadRepositoryTests : IClassFixture<SqlFixture>
 
         var rowsAffected = await _connectionFactory.ExecuteInScopeAsync(async connection =>
         {
+            await ClearUserCredentialsTable(connection);
             await ClearUserTable(connection);
+            
 
             return await _commandFactory.ExecuteAsync(
             commandText: InsertCommandText,
@@ -82,7 +85,9 @@ public class UserReadRepositoryTests : IClassFixture<SqlFixture>
 
         await _connectionFactory.ExecuteInScopeAsync(async connection =>
         {
+            await ClearUserCredentialsTable(connection);
             await ClearUserTable(connection);
+            
 
             Guid insertedId = await _commandFactory.ExecuteAsync(
                 commandText: InsertCommandText,
@@ -138,8 +143,10 @@ public class UserReadRepositoryTests : IClassFixture<SqlFixture>
     {
         await _connectionFactory.ExecuteInScopeAsync(async connection =>
         {
-            await ClearUserTable(connection);
 
+            await ClearUserCredentialsTable(connection); 
+            await ClearUserTable(connection);
+            
             for (int i = 0; i < 5; i++)
             {
                 Dictionary<string, object> parameters = GetBaseUserInsertParameters(i);
@@ -179,6 +186,7 @@ public class UserReadRepositoryTests : IClassFixture<SqlFixture>
 
         await _connectionFactory.ExecuteInScopeAsync(async connection =>
         {
+            await ClearUserCredentialsTable(connection);
             await ClearUserTable(connection);
 
             await _commandFactory.ExecuteAsync(
@@ -215,6 +223,7 @@ public class UserReadRepositoryTests : IClassFixture<SqlFixture>
     {
         await _connectionFactory.ExecuteInScopeAsync(async connection =>
         {
+            await ClearUserCredentialsTable(connection);
             await ClearUserTable(connection);
 
             var baseDate = DateTimeOffset.UtcNow.AddMonths(-6);
@@ -258,7 +267,8 @@ public class UserReadRepositoryTests : IClassFixture<SqlFixture>
     {
         await _connectionFactory.ExecuteInScopeAsync(async connection =>
         {
-            await ClearUserTable(connection);
+            await ClearUserCredentialsTable(connection);
+            await ClearUserTable(connection);            
 
             var retrieved = await _userReadRepository.GetUsers(connection, default);
 
@@ -274,7 +284,9 @@ public class UserReadRepositoryTests : IClassFixture<SqlFixture>
 
         await _connectionFactory.ExecuteInScopeAsync(async connection =>
         {
+            await ClearUserCredentialsTable(connection);
             await ClearUserTable(connection);
+            
 
             Guid insertedId = await _commandFactory.ExecuteAsync(
                 commandText: InsertCommandText,
@@ -313,7 +325,7 @@ public class UserReadRepositoryTests : IClassFixture<SqlFixture>
     private async Task ClearUserTable(Microsoft.Data.SqlClient.SqlConnection connection)
     {
         await _commandFactory.ExecuteAsync(
-            commandText: $"DELETE FROM {TableName}",
+            commandText: $"DELETE FROM {UsersTableName}",
             connection: connection,
             options: new CreateSqlCommandOptions(),
             operation: async command =>
@@ -322,7 +334,18 @@ public class UserReadRepositoryTests : IClassFixture<SqlFixture>
             },
             default);
     }
-
+    private async Task ClearUserCredentialsTable(Microsoft.Data.SqlClient.SqlConnection connection)
+    {
+        await _commandFactory.ExecuteAsync(
+            commandText: $"DELETE FROM {CredentialsTableName}",
+            connection: connection,
+            options: new CreateSqlCommandOptions(),
+            operation: async command =>
+            {
+                await command.ExecuteNonQueryAsync();
+            },
+            default);
+    }
     private static Dictionary<string, object> GetBaseUserInsertParameters(int pos = 0)
     {
         return new Dictionary<string, object>

@@ -32,8 +32,8 @@ public class DeleteAccountHandler : ICommandHandler<DeleteAccount, bool>
             if (account.Id != Guid.Empty)
             {
                 _logger.LogInformation(
-                    "Account found for deletion - ID: {AccountId}, UserId: {UserId}, Name: {Name}, Type: {Type}, Balance: {Balance}, CreditLimit: {CreditLimit}, CurrentDebt: {CurrentDebt}, Status: {Status}, CreatedAt: {CreatedAt}, ClosedAt: {ClosedAt}",
-                    account.Id, account.UserId, account.Name, account.Type, account.Balance,
+                    "Account found for deletion - ID: {AccountId}, UserId: {UserId}, Type: {Type}, Balance: {Balance}, CreditLimit: {CreditLimit}, CurrentDebt: {CurrentDebt}, Status: {Status}, CreatedAt: {CreatedAt}, ClosedAt: {ClosedAt}",
+                    account.Id, account.UserId, account.Type, account.Balance,
                     account.CreditLimit, account.CurrentDebt, account.Status,
                     account.CreatedAt, account.ClosedAt);
             }
@@ -45,8 +45,8 @@ public class DeleteAccountHandler : ICommandHandler<DeleteAccount, bool>
             if (result)
             {
                 _logger.LogInformation(
-                    "Account deleted successfully - ID: {AccountId}, Name: {Name}, Type: {Type}, Balance: {Balance}, Status: {Status}",
-                    account.Id, account.Name, account.Type, account.Balance, account.Status);
+                    "Account deleted successfully - ID: {AccountId}, Type: {Type}, Balance: {Balance}, Status: {Status}",
+                    account.Id, account.Type, account.Balance, account.Status);
             }
             else
             {

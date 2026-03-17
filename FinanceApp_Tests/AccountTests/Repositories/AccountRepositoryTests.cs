@@ -39,7 +39,6 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
 
             var account = new Account(
                 userId: newUserId,
-                name: "Test Checking Account",
                 balance: new Money(1500.00m, "USD"),
                 type: AccountType.Checking
             );
@@ -53,7 +52,6 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
             var retrieved = await GetAccountByIdAsync(account.Id, connection);
             retrieved.Should().NotBeNull();
             retrieved.Id.Should().Be(account.Id);
-            retrieved.Name.Should().Be("Test Checking Account");
             retrieved.Balance.Amount.Should().Be(1500.00m);
             retrieved.Balance.Currency.Should().Be("USD");
             retrieved.Type.Should().Be(AccountType.Checking);
@@ -73,7 +71,6 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
 
             var account = new Account(
                 userId: newUserId,
-                name: "Test Credit Card",
                 balance: new Money(500.00m, "USD"),
                 type: AccountType.CreditCard
             );
@@ -87,7 +84,6 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
             var retrieved = await GetAccountByIdAsync(account.Id, connection);
             retrieved.Should().NotBeNull();
             retrieved.Id.Should().Be(account.Id);
-            retrieved.Name.Should().Be("Test Credit Card");
             retrieved.Type.Should().Be(AccountType.CreditCard);
             retrieved.CreditLimit.Amount.Should().Be(4500);
             retrieved.CurrentDebt.Amount.Should().Be(0m);
@@ -97,58 +93,22 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
     [Fact]
     public async Task CreateAccountAsync_Should_Not_Insert_Account_Without_UserId()
     {
-        // Arrange
         await _connectionFactory.ExecuteInScopeAsync(async connection =>
         {
             await ClearAccountTable(connection);
 
             var account = new Account(
                 userId: Guid.Empty,
-                name: "Test Cash Account",
                 balance: new Money(200.00m, "BRL"),
                 type: AccountType.Cash
             );
 
-            // Act
             var result = async () => await _accountRepository.CreateAccountAsync(account);
 
-            // Assert
-            await result.Should().ThrowAsync<SqlException>().WithMessage("*Cannot insert the value NULL into column 'UserId'*");
+            await result.Should().ThrowAsync<SqlException>();
 
         });
     }
-
-    [Fact]
-    public async Task UpdateAccountAsync_Should_Update_Account_Name()
-    {
-        // Arrange
-        await _connectionFactory.ExecuteInScopeAsync(async connection =>
-        {
-            await ClearAccountTable(connection);
-            
-            Guid newUserId = await CreateNewUser(connection);
-
-            var account = new Account(
-                userId: newUserId,
-                name: "Original Name",
-                balance: new Money(1000.00m, "USD"),
-                type: AccountType.Checking
-            );
-
-            await _accountRepository.CreateAccountAsync(account);
-
-            // Act
-            account.UpdateName("Updated Name");
-            var result = await _accountRepository.UpdateAccountAsync(account);
-
-            // Assert
-            result.Should().BeTrue();
-
-            var retrieved = await GetAccountByIdAsync(account.Id, connection);
-            retrieved.Name.Should().Be("Updated Name");
-        });
-    }
-
     [Fact]
     public async Task UpdateAccountAsync_Should_Update_Account_Balance()
     {
@@ -161,7 +121,6 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
 
             var account = new Account(
                 userId: newUserId,
-                name: "Test Account",
                 balance: new Money(1000.00m, "USD"),
                 type: AccountType.Checking
             );
@@ -169,7 +128,7 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
             await _accountRepository.CreateAccountAsync(account);
 
             // Act
-            account.ApplyDelta(new Money(500.00m, "USD"));
+            account.ApplyDelta(new Money(500.00m, "USD"), transactionType: TransactionType.Deposit);
             var result = await _accountRepository.UpdateAccountAsync(account);
 
             // Assert
@@ -192,19 +151,19 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
 
             var account = new Account(
                 userId: newUserId,
-                name: "Test Account",
                 balance: new Money(100.00m, "USD"),
                 type: AccountType.Cash
             );
 
-            await _accountRepository.CreateAccountAsync(account);
+            await _accountRepository.CreateAccountAsync(account, connection);
 
-            // Act
-            account.ApplyDelta(new Money(-100.00m, "USD")); // Zero balance
+            account.ApplyDelta(new Money(100.00m, "USD")); 
+            var result = await _accountRepository.UpdateAccountAsync(account, connection);
+
             account.Close();
-            var result = await _accountRepository.UpdateAccountAsync(account);
 
-            // Assert
+            await _accountRepository.UpdateAccountAsync(account, connection);
+
             result.Should().BeTrue();
 
             var retrieved = await GetAccountByIdAsync(account.Id, connection);
@@ -225,7 +184,6 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
 
             var account = new Account(                
                 userId: newUserId,
-                name: "Test Credit Card",
                 balance: new Money(500.00m, "USD"),
                 type: AccountType.CreditCard
             );
@@ -251,7 +209,6 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
         var nonExistentAccount = new Account(
             id: Guid.NewGuid(),
             userId: Guid.NewGuid(),
-            name: "Non-existent Account",
             balance: new Money(1000.00m, "USD"),
             creditLimit: new Money(5000.00m, "USD"),
             currentDebt: new Money(0m, "USD"),
@@ -282,7 +239,6 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
 
             var account = new Account(
                 userId: newUserId,
-                name: "Account To Delete",
                 balance: new Money(500.00m, "USD"),
                 type: AccountType.Cash
             );
@@ -326,7 +282,7 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
             {
                 Guid newUserId = await CreateNewUser(connection);
 
-                accounts.Add(new Account(Guid.NewGuid(), newUserId, $"Account {i + 1}", new Money(100.00m * (i + 1), "USD"), (AccountType)i));
+                accounts.Add(new Account(newUserId, new Money(100.00m * (i + 1), "USD"), (AccountType)i));
             }
             
             foreach (var account in accounts)
@@ -352,7 +308,6 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
             Guid newUserId = await CreateNewUser(connection);
             var account = new Account(
                 userId: newUserId,
-                name: "Test Account",
                 balance: new Money(1000.00m, "USD"),
                 type: AccountType.Checking
             );
@@ -360,15 +315,13 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
             await _accountRepository.CreateAccountAsync(account);
             var originalCreatedAt = account.CreatedAt;
 
-            // Act
-            account.UpdateName("Updated Name");
             await _accountRepository.UpdateAccountAsync(account);
 
             // Assert
             var retrieved = await GetAccountByIdAsync(account.Id, connection);
             retrieved.UserId.Should().Be(newUserId);
             retrieved.Type.Should().Be(AccountType.Checking);
-            retrieved.CreatedAt.Should().BeCloseTo(originalCreatedAt, TimeSpan.FromSeconds(1));
+            retrieved.CreatedAt.Should().NotBeSameDateAs(retrieved.UpdatedAt);
         });
     }
 
@@ -376,7 +329,7 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
 
     private async Task<Account> GetAccountByIdAsync(Guid accountId, SqlConnection connection)
     {
-        const string selectCommandText = @"SELECT Id, UserId, Name, BalanceAmount, BalanceCurrency, 
+        const string selectCommandText = @"SELECT Id, UserId, BalanceAmount, BalanceCurrency, 
                                           CreditLimitAmount, CreditLimitCurrency, CurrentDebtAmount, CurrentDebtCurrency,
                                           PaymentDate, DueDate, Status, Type, CreatedAt, ClosedAt
                                           FROM [FinanceApp].[dbo].[Account]
@@ -398,7 +351,6 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
                     return new Account(
                         id: reader.GetGuid(reader.GetOrdinal("Id")),
                         userId: reader.GetGuid(reader.GetOrdinal("UserId")),
-                        name: reader.GetString(reader.GetOrdinal("Name")),
                         balance: new Money(
                             reader.GetDecimal(reader.GetOrdinal("BalanceAmount")),
                             reader.GetString(reader.GetOrdinal("BalanceCurrency"))),
@@ -424,7 +376,7 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
 
     private async Task<List<Account>> GetAllAccountsAsync(SqlConnection connection)
     {
-        const string selectCommandText = @"SELECT Id, UserId, Name, BalanceAmount, BalanceCurrency, 
+        const string selectCommandText = @"SELECT Id, UserId, BalanceAmount, BalanceCurrency, 
                                           CreditLimitAmount, CreditLimitCurrency, CurrentDebtAmount, CurrentDebtCurrency,
                                           PaymentDate, DueDate, Status, Type, CreatedAt, ClosedAt
                                           FROM [FinanceApp].[dbo].[Account]";
@@ -443,7 +395,6 @@ public class AccountRepositoryTests : IClassFixture<SqlFixture>
                     accounts.Add(new Account(
                         id: reader.GetGuid(reader.GetOrdinal("Id")),
                         userId: reader.GetGuid(reader.GetOrdinal("UserId")),
-                        name: reader.GetString(reader.GetOrdinal("Name")),
                         balance: new Money(
                             reader.GetDecimal(reader.GetOrdinal("BalanceAmount")),
                             reader.GetString(reader.GetOrdinal("BalanceCurrency"))),

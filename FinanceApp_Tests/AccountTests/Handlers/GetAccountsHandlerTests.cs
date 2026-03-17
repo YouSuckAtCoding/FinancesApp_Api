@@ -29,9 +29,9 @@ public class GetAccountsHandlerTests
         // Arrange
         var expectedAccounts = new List<Account>
         {
-            new Account(Guid.NewGuid(), "Account 1", new Money(1000, "USD"), AccountType.Checking),
-            new Account(Guid.NewGuid(), "Account 2", new Money(2000, "USD"), AccountType.Cash),
-            new Account(Guid.NewGuid(), "Account 3", new Money(3000, "USD"), AccountType.CreditCard)
+            new Account(Guid.NewGuid(), new Money(1000, "USD"), AccountType.Checking),
+            new Account(Guid.NewGuid(), new Money(2000, "USD"), AccountType.Cash),
+            new Account(Guid.NewGuid(), new Money(3000, "USD"), AccountType.CreditCard)
         }.AsReadOnly();
 
         _mockRepository.GetAccounts(token: Arg.Any<CancellationToken>())

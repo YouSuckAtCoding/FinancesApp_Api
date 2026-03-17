@@ -29,7 +29,6 @@ public class AccountReadRepository : IAccountReadRepository
             commandText: @"SELECT 
                                 Id ,
                                 UserId ,
-                                Name ,
                                 BalanceAmount ,
                                 BalanceCurrency ,
                                 CreditLimitAmount ,
@@ -57,7 +56,6 @@ public class AccountReadRepository : IAccountReadRepository
                     return new Account(
                        id: reader.GetGuid("Id"),
                        userId: reader.GetGuid("UserId"),
-                       name: reader.GetString("Name"),
                        balance: new(reader.GetDecimal("BalanceAmount"), reader.GetString("BalanceCurrency")),
                        creditLimit: new(reader.GetDecimal("CreditLimitAmount"), reader.GetString("CreditLimitCurrency")),
                        currentDebt: new(reader.GetDecimal("CurrentDebtAmount"), reader.GetString("CurrentDebtCurrency")),
@@ -88,7 +86,6 @@ public class AccountReadRepository : IAccountReadRepository
                 commandText: @"SELECT 
                                     Id ,
                                     UserId ,
-                                    Name ,
                                     BalanceAmount ,
                                     BalanceCurrency ,
                                     CreditLimitAmount ,
@@ -113,7 +110,6 @@ public class AccountReadRepository : IAccountReadRepository
                         result.Add(new Account(
                             id: reader.GetGuid("Id"),
                             userId: reader.GetGuid("UserId"),
-                            name: reader.GetString("Name"),
                             balance: new(reader.GetDecimal("BalanceAmount"), reader.GetString("BalanceCurrency")),
                             creditLimit: new(reader.GetDecimal("CreditLimitAmount"), reader.GetString("CreditLimitCurrency")),
                             currentDebt: new(reader.GetDecimal("CurrentDebtAmount"), reader.GetString("CurrentDebtCurrency")),
@@ -146,7 +142,6 @@ public class AccountReadRepository : IAccountReadRepository
             commandText: @"SELECT 
                                 Id ,
                                 UserId ,
-                                Name ,
                                 BalanceAmount ,
                                 BalanceCurrency ,
                                 CreditLimitAmount ,
@@ -174,7 +169,6 @@ public class AccountReadRepository : IAccountReadRepository
                     result.Add(new Account(
                         id: reader.GetGuid("Id"),
                         userId: reader.GetGuid("UserId"),
-                        name: reader.GetString("Name"),
                         balance: new(reader.GetDecimal("BalanceAmount"), reader.GetString("BalanceCurrency")),
                         creditLimit: new(reader.GetDecimal("CreditLimitAmount"), reader.GetString("CreditLimitCurrency")),
                         currentDebt: new(reader.GetDecimal("CurrentDebtAmount"), reader.GetString("CurrentDebtCurrency")),
@@ -206,7 +200,6 @@ public class AccountReadRepository : IAccountReadRepository
             commandText: @"SELECT 
                                 Id ,
                                 UserId ,
-                                Name ,
                                 BalanceAmount ,
                                 BalanceCurrency ,
                                 CreditLimitAmount ,
@@ -234,7 +227,6 @@ public class AccountReadRepository : IAccountReadRepository
                     result.Add(new Account(
                         id: reader.GetGuid("Id"),
                         userId: reader.GetGuid("UserId"),
-                        name: reader.GetString("Name"),
                         balance: new(reader.GetDecimal("BalanceAmount"), reader.GetString("BalanceCurrency")),
                         creditLimit: new(reader.GetDecimal("CreditLimitAmount"), reader.GetString("CreditLimitCurrency")),
                         currentDebt: new(reader.GetDecimal("CurrentDebtAmount"), reader.GetString("CurrentDebtCurrency")),
