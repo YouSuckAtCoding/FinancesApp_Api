@@ -63,4 +63,35 @@ public class AccountDomainTests
             .WithMessage("Currency mismatch.");
     }
 
+    [Fact]
+    void Should_Set_PaymentDate_And_DueDate_For_CreditCard_On_Creation()
+    {
+        var account = new Account(Guid.NewGuid(), new Money(0m, "USD"), AccountType.CreditCard);
+        var now = DateTimeOffset.UtcNow;
+        var expectedMonth = now.Month == 12 ? 1 : now.Month + 1;
+
+        account.PaymentDate.Should().NotBeNull();
+        account.DueDate.Should().NotBeNull();
+        account.PaymentDate!.Value.Month.Should().Be(expectedMonth);
+        account.DueDate!.Value.Day.Should().Be(10);
+    }
+
+    [Fact]
+    void Should_Not_Set_PaymentDates_For_Non_CreditCard()
+    {
+        var account = new Account(Guid.NewGuid(), new Money(1000m, "USD"), AccountType.Cash);
+
+        account.PaymentDate.Should().BeNull();
+        account.DueDate.Should().BeNull();
+    }
+
+    [Fact]
+    void Should_Increase_Balance_On_Deposit()
+    {
+        var account = new Account(Guid.NewGuid(), new Money(1000m, "USD"), AccountType.Checking);
+
+        account.ApplyDelta(new Money(500m, "USD"), transactionType: TransactionType.Deposit);
+
+        account.Balance.Amount.Should().Be(1500m);
+    }
 }

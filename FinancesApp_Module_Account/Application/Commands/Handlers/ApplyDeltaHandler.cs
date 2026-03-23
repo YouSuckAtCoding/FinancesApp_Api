@@ -29,7 +29,7 @@ public class ApplyDeltaHandler : ICommandHandler<ApplyDelta, bool>
 
             account.ApplyDelta(new Money(command.Value, command.Currency), command.OperationType);
 
-            await _eventStore.Append(account.Id, account.GetUncommittedEvents(), account.CurrentVersion, cancellationToken);
+            await _eventStore.Append(account.Id, account.GetUncommittedEvents(),account.CurrentVersion, default);
 
             return true;
         }

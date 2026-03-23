@@ -2,12 +2,11 @@
 using FinancesApp_Module_Account.Domain.ValueObjects;
 
 namespace FinancesApp_Module_Account.Domain.Events;
-internal record CreditUpdatedEvent(Guid EventId,
+public record CreditUpdatedEvent(Guid EventId,
                                    DateTimeOffset Timestamp,
                                    Guid AccountId,
                                    Guid UserId,
-                                   Money Value,
-                                   Money PreviousDebt,
+                                   Money NewDebt,
                                    Money CurrentDebt) : IDomainEvent
 {
 }

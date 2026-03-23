@@ -30,7 +30,7 @@ public class CreateAccountHandler : ICommandHandler<CreateAccount, bool>
 
             account.RebuildFromEvents(loaded);
 
-            await _eventStore.Append(account.Id, account.GetUncommittedEvents(), account.CurrentVersion,  cancellationToken);
+            await _eventStore.Append(account.Id, account.GetUncommittedEvents(),account.CurrentVersion, default);
 
             return true;
         }

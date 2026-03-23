@@ -17,6 +17,7 @@ public sealed class Account : AggregateRoot
     public Money CurrentDebt { get; private set; }   
     public DateTimeOffset? PaymentDate { get; private set; }
     public DateTimeOffset? DueDate { get; private set; }
+    public DateTimeOffset? PayedAt { get; private set; }
     public AccountStatus Status { get; private set; }
     public AccountType Type{ get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
@@ -90,6 +91,17 @@ public sealed class Account : AggregateRoot
 
     }
 
+    public void PayCreditCardDebt(Money amount)
+    {
+        EnsureActive();
+        EnsureCurrency(amount.Currency);
+
+        if (Type != AccountType.CreditCard)
+            throw new InvalidOperationException("Only credit card accounts can process credit payments.");
+
+        Raise(new CredidCardStatementPaymentEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, Id, UserId, amount));
+    }
+
     public void Close()
     {
         EnsureActive();
@@ -99,7 +111,13 @@ public sealed class Account : AggregateRoot
 
         Raise(new AccountClosedEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, Id, UserId));
     }
-
+    public override void RebuildFromEvents(List<IDomainEvent> events)
+    {
+        ClearUncommittedEvents();
+        foreach (var evt in events)
+            Apply(evt);
+        SetAggregateVersions(events.Count);
+    }
     private void CalculateCreditLimit(Money balance)
     {
 
@@ -123,14 +141,34 @@ public sealed class Account : AggregateRoot
                                                  new Money(decimal.Ceiling(balance.Amount * 2), balance.Currency)));
     }
 
+    private void ValidateCreditCardDueDate()
+    {
+        if (!DueDate.HasValue)
+            throw new InvalidOperationException("Due date is not set for this credit card account.");
+    }
+
+    private void RecalculateDebt()
+    {
+        var daysPastDue = (DateTimeOffset.UtcNow - DueDate!.Value).Days;
+        var interestRate = 0.05m;
+        var interest = CurrentDebt.Amount * interestRate * daysPastDue;
+
+        var newDebt = CurrentDebt.Add(new Money(interest, CurrentDebt.Currency));
+
+        CurrentDebt = new Money(newDebt.Amount, newDebt.Currency);
+    }
+
     protected override void Apply(IDomainEvent evt)
     {
         switch (evt)
         {
             case DepositEvent e:
+
                 Balance = Balance.Add(new Money(e.Value, Balance.Currency));
                 break;
+
             case WithdrawEvent e:
+
                 var newBalance = Balance.Subtract(new Money(e.Value, Balance.Currency));
                 
                 if (Type == AccountType.Cash && newBalance.Amount < 0)
@@ -138,49 +176,95 @@ public sealed class Account : AggregateRoot
 
                 Balance = newBalance;
                 break;
+
             case CalculatedCreditLimitEvent e:
+
                 CreditLimit = new Money(e.Value.Amount, e.Value.Currency);
                 break;
+
             case CreditUpdatedEvent e:
-                CurrentDebt = new Money(e.Value.Amount, e.Value.Currency);
+
+                CurrentDebt = new Money(e.NewDebt.Amount, e.NewDebt.Currency);
                 break;
+
             case AccountClosedEvent:
+
                 Status = AccountStatus.Closed;
                 ClosedAt = DateTimeOffset.UtcNow;
                 break;
+
             case AccountCreatedEvent e:
+                
                 Id = e.Id;
                 UserId = e.userId;
                 Type = e.type;
-                if (ValidateInitialBalance(e.balance))
-                    Balance = e.balance;
-                CalculateCreditLimit(Balance);
                 CurrentDebt = e.debt;
                 CreatedAt = e.Timestamp;
+
+                if (ValidateInitialBalance(e.balance))
+                    Balance = e.balance;
+
+                CalculateCreditLimit(Balance);
+
+                SetCreditCardPaymentDates();
+              
                 break;
+
             case UpdatedAccountEvent e:
+
                 Id = e.Id;
                 UserId = e.userId;
                 Type = e.type;
-                if (ValidateInitialBalance(e.balance))
-                    Balance = e.balance;
-                CalculateCreditLimit(Balance);
                 CurrentDebt = e.debt;
                 UpdatedAt = e.Timestamp;
+
+                if (ValidateInitialBalance(e.balance))
+                    Balance = e.balance;
+                
+                CalculateCreditLimit(Balance);
+               
                 break;
+
+            case DebtRecalculatedEvent:
+
+                RecalculateDebt();
+                break;
+
+            case CredidCardStatementPaymentEvent e:
+
+                ValidateCreditCardDueDate();
+
+                if (DateTimeOffset.UtcNow > DueDate!.Value)
+                    RecalculateDebt();
+
+                UpdateCredit(e.Amount, OperationType.Payment, raiseEvent: false);
+
+                if (CurrentDebt.IsZero)
+                    PayedAt = DateTimeOffset.UtcNow;
+
+                SetCreditCardPaymentDates();
+
+                break;
+
             default:
                 throw new NotImplementedException(string.Format("No event handler for selected operation {0}", evt.GetType().Name));
         }
     }
 
-    public override void RebuildFromEvents(List<IDomainEvent> events)
+    private void SetCreditCardPaymentDates()
     {
-        foreach (var evt in events)
-            Apply(evt);
-        SetAggregateVersions(events.Count);
+        if (Type != AccountType.CreditCard)
+            return;
+
+        var now = DateTimeOffset.UtcNow;
+
+        PaymentDate = new DateTimeOffset(now.Year, now.Month + 1, 1, 0, 0, 0, now.Offset);
+        DueDate = new DateTimeOffset(now.Year, now.Month + 1, 10, 23, 59, 59, now.Offset);
     }
 
-    private void UpdateCredit(Money delta, OperationType opType)
+    private void UpdateCredit(Money delta, 
+                              OperationType opType,
+                              bool raiseEvent = true)
     {
         Money newDebt;
 
@@ -193,8 +277,16 @@ public sealed class Account : AggregateRoot
             throw new InvalidOperationException("Credit limit exceeded.");
 
         var debt = newDebt.Amount < 0 ? new Money(0m, delta.Currency) : newDebt;
-
-        Raise(new CreditUpdatedEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, Id, UserId, debt, CurrentDebt, newDebt));
+        
+        if(raiseEvent)
+            Raise(new CreditUpdatedEvent(Guid.NewGuid(),
+                                         DateTimeOffset.UtcNow,
+                                         Id,
+                                         UserId,
+                                         NewDebt: debt,
+                                         CurrentDebt: CurrentDebt));
+        else
+            CurrentDebt = debt;
     }
   
     private void EnsureCurrency(string currency)

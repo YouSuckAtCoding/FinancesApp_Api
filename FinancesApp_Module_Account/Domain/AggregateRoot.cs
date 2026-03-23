@@ -17,7 +17,7 @@ public abstract class AggregateRoot
     public void SetAggregateVersions(int current)
     {
         CurrentVersion = current;
-        NextVersion += current;
+        NextVersion = current;
     }
 
     protected abstract void Apply(IDomainEvent evt);

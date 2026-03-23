@@ -53,7 +53,7 @@ public class ApplyDeltaHandlerTests
         var account = BuildCheckingAccount();
         var command = BuildCommand(account);
 
-        _storeMock.Setup(r => r.Append(account.Id, account.GetUncommittedEvents(), account.CurrentVersion, It.IsAny<CancellationToken>()));
+        _storeMock.Setup(r => r.Append(account.Id, account.GetUncommittedEvents(), account.CurrentVersion,It.IsAny<CancellationToken>()));
 
         var result = await _handler.Handle(command);
 

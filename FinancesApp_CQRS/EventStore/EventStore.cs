@@ -25,11 +25,11 @@ public class EventStore(ICommandFactory commandFactory,
                     throw new ConcurrencyException(
                         $"Concurrency conflict on aggregate {aggregateId}. " +
                         $"Expected version {expectedVersion}, found {currentVersion}.");
-
+             
                 for (int i = 0; i < events.Count; i++)
                 {
                     var evt = events[i];
-                    var version = expectedVersion + i + 1;
+                    var version = expectedVersion + (i + 1);
                     await InsertEvent(evt,
                                       aggregateId,
                                       version,
