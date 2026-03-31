@@ -5,14 +5,12 @@ using Microsoft.Extensions.Logging;
 namespace FinancesApp_Module_Account.Application.Commands.Handlers;
 public class ApplyDeltaHandler : ICommandHandler<ApplyDelta, bool>
 {
-    private readonly IAccountRepository _accountRepository;
     private readonly ILogger<CreateAccountHandler> _logger;
     private readonly IEventStore _eventStore;
 
-    public ApplyDeltaHandler(ILogger<CreateAccountHandler> logger, IAccountRepository accountRepository, IEventStore eventStore)
+    public ApplyDeltaHandler(ILogger<CreateAccountHandler> logger, IEventStore eventStore)
     {
         _logger = logger;
-        _accountRepository = accountRepository;
         _eventStore = eventStore;
     }
 

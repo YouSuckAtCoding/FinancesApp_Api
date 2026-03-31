@@ -90,10 +90,9 @@ public class AccountEvents_CreditCardWorkflowTests : IClassFixture<SqlFixture>
 
         account.PayCreditCardDebt(new Money(500m, "USD"));
 
-        // Dates are reset to next billing cycle
         account.DueDate.Should().NotBeNull();
         account.PaymentDate.Should().NotBeNull();
-        // Due date should be in the next month
+
         account.DueDate!.Value.Should().BeAfter(DateTimeOffset.UtcNow);
     }
 
@@ -135,7 +134,7 @@ public class AccountEvents_CreditCardWorkflowTests : IClassFixture<SqlFixture>
     void Should_Throw_When_Paying_On_Closed_Account()
     {
         var account = CreateCreditCard();
-        // Close requires zero balance — credit card has no balance, so close directly
+
         account.Close();
 
         var act = () => account.PayCreditCardDebt(new Money(100m, "USD"));
@@ -175,14 +174,9 @@ public class AccountEvents_CreditCardWorkflowTests : IClassFixture<SqlFixture>
     [Fact]
     void Should_Raise_DebtRecalculatedEvent_When_DueDate_Is_Overdue()
     {
-        // Arrange — simulate an overdue account by manipulating DueDate
-        // Since DueDate is set internally, we rebuild from events with a past due date
         var account = CreateCreditCard();
         account.ApplyDelta(new Money(1000m, "USD"), OperationType.CreditPurchase);
 
-        // Simulate overdue: ValidateCreditCardDueDate checks DateTimeOffset.UtcNow > DueDate
-        // We test this indirectly by calling PayCreditCardDebt on an overdue account
-        // To simulate overdue, we need to inject a past DueDate — use the full constructor:
         var overdueAccount = new Account(
             id: account.Id,
             userId: account.UserId,
@@ -197,18 +191,14 @@ public class AccountEvents_CreditCardWorkflowTests : IClassFixture<SqlFixture>
             closedAt: null
         );
 
-        // Act — payment on overdue account should trigger debt recalculation first
         var act = () => overdueAccount.PayCreditCardDebt(new Money(500m, "USD"));
 
-        // Assert — should not throw; recalculation happens internally
         act.Should().NotThrow();
     }
 
     [Fact]
     void Should_Apply_5_Percent_Daily_Interest_When_Overdue()
     {
-        // Arrange — 1000 debt, 5 days past due
-        // Expected interest = 1000 * 0.05 * 5 = 250 → new debt = 1250
         var daysPastDue = 5;
         var originalDebt = 1000m;
         var expectedInterest = originalDebt * 0.05m * daysPastDue;
@@ -228,11 +218,8 @@ public class AccountEvents_CreditCardWorkflowTests : IClassFixture<SqlFixture>
             closedAt: null
         );
 
-        // Trigger recalculation via payment (which calls ValidateCreditCardDueDate internally)
-        overdueAccount.PayCreditCardDebt(new Money(0.01m, "USD")); // minimal payment to trigger
+        overdueAccount.PayCreditCardDebt(new Money(0.01m, "USD"));
 
-        // Debt should reflect interest BEFORE payment is subtracted
-        // (depends on your implementation order — adjust if payment is applied first)
         overdueAccount.CurrentDebt.Amount.Should().BeApproximately(expectedDebt - 0.01m, 0.01m);
     }
 
@@ -242,10 +229,8 @@ public class AccountEvents_CreditCardWorkflowTests : IClassFixture<SqlFixture>
         var account = CreateCreditCard();
         account.ApplyDelta(new Money(1000m, "USD"), OperationType.CreditPurchase);
 
-        // DueDate is next month — not overdue
         account.PayCreditCardDebt(new Money(500m, "USD"));
 
-        // Debt should be reduced by payment only, no interest added
         account.CurrentDebt.Amount.Should().Be(500m);
     }
 
@@ -266,9 +251,8 @@ public class AccountEvents_CreditCardWorkflowTests : IClassFixture<SqlFixture>
             closedAt: null
         );
 
-        overdueAccount.PayCreditCardDebt(new Money(1000m, "USD")); // full payment
+        overdueAccount.PayCreditCardDebt(new Money(1000m, "USD"));
 
-        // After payment, dates should be reset to next cycle
         overdueAccount.DueDate!.Value.Should().BeAfter(DateTimeOffset.UtcNow);
         overdueAccount.PaymentDate!.Value.Should().BeAfter(DateTimeOffset.UtcNow);
     }

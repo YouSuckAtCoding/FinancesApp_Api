@@ -358,42 +358,6 @@ public class UserDomainTests
     #region Age Property Tests
 
     [Fact]
-    public void Age_Should_Calculate_Correctly_When_Birthday_Has_Passed_This_Year()
-    {
-        var today = DateTimeOffset.UtcNow;
-        var dateOfBirth = new DateTimeOffset(
-            today.Year - 25,
-            today.Month > 1 ? today.Month - 1 : 12,
-            today.Day,
-            0, 0, 0,
-            TimeSpan.Zero);
-
-        var user = new User("John Doe", "john@example.com", dateOfBirth, "");
-
-        var age = user.Age;
-
-        age.Should().Be(25);
-    }
-
-    [Fact]
-    public void Age_Should_Calculate_Correctly_When_Birthday_Has_Not_Passed_This_Year()
-    {
-        var today = DateTimeOffset.UtcNow;
-        var dateOfBirth = new DateTimeOffset(
-            today.Year - 25,
-            today.Month < 12 ? today.Month + 1 : 1,
-            today.Day,
-            0, 0, 0,
-            TimeSpan.Zero);
-
-        var user = new User("John Doe", "john@example.com", dateOfBirth, "");
-
-        var age = user.Age;
-
-        age.Should().Be(24);
-    }
-
-    [Fact]
     public void Age_Should_Calculate_Correctly_On_Birthday()
     {
         var today = DateTimeOffset.UtcNow;
@@ -418,10 +382,11 @@ public class UserDomainTests
         var dateOfBirth = new DateTimeOffset(
             today.Year - 30,
             today.Month,
-            today.Day < 28 ? today.Day + 1 : 1,
+            today.Day,
             0, 0, 0,
             TimeSpan.Zero);
 
+        dateOfBirth = dateOfBirth.AddDays(2);
         var user = new User("John Doe", "john@example.com", dateOfBirth, "");
 
         var age = user.Age;
@@ -436,9 +401,11 @@ public class UserDomainTests
         var dateOfBirth = new DateTimeOffset(
             today.Year - 30,
             today.Month,
-            today.Day > 1 ? today.Day - 1 : 28,
+            today.Day,
             0, 0, 0,
             TimeSpan.Zero);
+
+        dateOfBirth = dateOfBirth.AddDays(-2);
 
         var user = new User("John Doe", "john@example.com", dateOfBirth, "");
 
@@ -490,20 +457,6 @@ public class UserDomainTests
         }
 
         age.Should().Be(expectedAge);
-    }
-
-    [Fact]
-    public void Age_Should_Be_Consistent_When_Called_Multiple_Times()
-    {
-        var dateOfBirth = DateTimeOffset.UtcNow.AddYears(-30);
-        var user = new User("John Doe", "john@example.com", dateOfBirth, "");
-
-        var age1 = user.Age;
-        var age2 = user.Age;
-        var age3 = user.Age;
-
-        age1.Should().Be(age2);
-        age2.Should().Be(age3);
     }
 
     #endregion

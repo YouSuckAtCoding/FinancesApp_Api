@@ -14,14 +14,11 @@ public class User
     {
         get
         {
-            var today = DateTimeOffset.UtcNow;
-            var age = today.Year - DateOfBirth.Year;
+            DateTime today = DateTime.Today;
+            int age = today.Year - DateOfBirth.Year;
 
-            if (today.Month < DateOfBirth.Month ||
-                (today.Month == DateOfBirth.Month && today.Day < DateOfBirth.Day))
-            {
+            if (DateOfBirth.Date > today.AddYears(-age))
                 age--;
-            }
 
             return age;
         }
@@ -108,6 +105,11 @@ public class User
 
         return dateOfBirth;
     }
+
+    //public static int CalculateAge(DateTime birthDate)
+    //{
+   
+    //}
     private void ValidateAge(int age)
     {
         if (Age > 120)

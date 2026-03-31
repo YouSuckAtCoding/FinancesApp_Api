@@ -92,21 +92,16 @@ public class AccountEventsTests : IClassFixture<SqlFixture>
     [Fact]
     void Should_Update_CurrentDebt_After_Payment_Without_Raising_Extra_Events()
     {
-        // Arrange
         var account = new Account(Guid.NewGuid(), new Money(0m, "USD"), AccountType.CreditCard);
         account.ClearUncommittedEvents();
 
         account.ApplyDelta(new Money(1000m, "USD"), OperationType.CreditPurchase);
         account.ClearUncommittedEvents();
 
-        // Act
         account.PayCreditCardDebt(new Money(600m, "USD"));
 
-        // Assert — debt must reflect the payment
-        // Fails if UpdateCredit(raiseEvent: false) doesn't assign CurrentDebt
         account.CurrentDebt.Amount.Should().Be(400m);
 
-        // Also assert no extra CreditUpdatedEvent was raised (only CredidCardStatementPaymentEvent)
         account.GetUncommittedEvents()
                .Should().NotContain(e => e is CreditUpdatedEvent,
                    because: "payment path should not raise CreditUpdatedEvent");
@@ -132,6 +127,31 @@ public class AccountEventsTests : IClassFixture<SqlFixture>
             userB.Id, userB.GetUncommittedEvents(), userB.CurrentVersion, default);
 
         await act.Should().ThrowAsync<ConcurrencyException>();
+    }
+
+    [Fact]
+    async Task Should_Close_Account_And_Rebuild_Correctly_From_EventStore()
+    {
+        var account = new Account(Guid.NewGuid(), new Money(1000m, "USD"), AccountType.Checking);
+
+        account.ApplyDelta(new Money(1000m, "USD"), OperationType.MoneyTransaction, TransactionType.Withdraw);
+
+        await _eventStore.Append(account.Id, account.GetUncommittedEvents(), account.CurrentVersion, default);
+        
+        var events = await _eventStore.Load(account.Id, default);
+        
+        var rebuiltAccount = new Account();
+
+        rebuiltAccount.RebuildFromEvents(events);
+
+        rebuiltAccount.Close();
+        
+        await _eventStore.Append(rebuiltAccount.Id, rebuiltAccount.GetUncommittedEvents(), rebuiltAccount.CurrentVersion, default);
+
+        var finalAccount = new Account();   
+        finalAccount.RebuildFromEvents(await _eventStore.Load(account.Id, default));
+        finalAccount.ClosedAt.Should().NotBe(DateTimeOffset.MinValue);
+        finalAccount.ClosedAt.Should().BeCloseTo(rebuiltAccount.ClosedAt!.Value, TimeSpan.FromSeconds(2));
     }
 
 }

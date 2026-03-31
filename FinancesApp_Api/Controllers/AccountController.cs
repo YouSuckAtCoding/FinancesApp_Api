@@ -16,6 +16,7 @@ public class AccountController(IQueryHandler<GetAccounts, IReadOnlyList<Account>
                                IQueryHandler<GetAccountById, Account> getAccountByIdHandler,
                                IQueryHandler<GetActiveAccounts, IReadOnlyList<Account>> getActiveAccountsHandler,
                                ICommandHandler<CreateAccount, bool> createAccountHandler,
+                               ICommandHandler<UpdateAccount, bool> updateAccountHandler,
                                ICommandHandler<ApplyDelta, bool> applyDeltaHandler) : ControllerBase
 {
 
@@ -31,7 +32,8 @@ public class AccountController(IQueryHandler<GetAccounts, IReadOnlyList<Account>
     }
 
     [HttpGet(AccountEndpoints.GetAccountById)]
-    public async Task<IActionResult> GetAccountById([FromRoute] string accountId, CancellationToken token = default)
+    public async Task<IActionResult> GetAccountById([FromRoute] string accountId,
+                                                    CancellationToken token = default)
     {
 
         if (!Guid.TryParse(accountId, out var accountGuid))
@@ -60,7 +62,7 @@ public class AccountController(IQueryHandler<GetAccounts, IReadOnlyList<Account>
 
     [HttpPost(AccountEndpoints.CreateAccount)]
     public async Task<IActionResult> CreateAccount([FromBody] CreateAccountRequest request, 
-                                                    CancellationToken token = default)
+                                                   CancellationToken token = default)
     {
         var command = new CreateAccount()
         {
@@ -101,12 +103,43 @@ public class AccountController(IQueryHandler<GetAccounts, IReadOnlyList<Account>
             OperationType = (OperationType)request.OperationType,
             RequestedAt = MappingUtils.ParseToDateTimeOffset(request.RequestedAt) ?? DateTimeOffset.UtcNow
         };
+
         var result = await applyDeltaHandler.Handle(command, token);
         
         if (!result)
             return BadRequest("Failed to apply delta");
 
         return Ok("Delta applied successfully");
+    }
+
+    [HttpPut(AccountEndpoints.UpdateAccount)]
+    public async Task<IActionResult> UpdateAccount([FromBody] UpdateAccountRequest request, 
+                                                   CancellationToken token = default)
+    {
+        if (request.AccountId == Guid.Empty)
+            return BadRequest("Invalid Id");
+
+        var query = new GetAccountById()
+        {
+            AccountId = request.AccountId
+        };
+
+        var account = await getAccountByIdHandler.Handle(query, token);
+
+        if (account.Id == Guid.Empty)
+            return NotFound();
+
+        var command = new UpdateAccount()
+        {
+            Account = account
+        };
+
+        var result = await updateAccountHandler.Handle(command, token);
+
+        if (!result)
+            return BadRequest("Failed to update account");
+
+        return Ok("Account updated successfully");
     }
 }
 

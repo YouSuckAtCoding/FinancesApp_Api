@@ -10,6 +10,7 @@ using FinancesApp_CQRS.Interfaces;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
+using Prometheus;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Text.Json;
 
@@ -99,7 +100,9 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
-
+app.UseRouting();
+app.UseHttpMetrics();
 app.MapControllers();
+app.MapMetrics();
 
 app.Run();

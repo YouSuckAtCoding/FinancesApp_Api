@@ -26,15 +26,27 @@ public sealed class Account : AggregateRoot
 
     public Account(Guid id,
                    Guid userId,
-                   Money balance,
-                   AccountType type) 
-        => Raise(new UpdatedAccountEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, id, userId, balance, new Money(0m, balance.Currency), type));
+                   AccountType type,
+                   DateTimeOffset PaymentDate) 
+        => Raise(new UpdatedAccountEvent(Guid.NewGuid(),
+                                         DateTimeOffset.UtcNow, 
+                                         id,
+                                         userId,
+                                         type,
+                                         PaymentDate));
     
+
 
     public Account(Guid userId,
                    Money balance,
                    AccountType type) 
-        => Raise(new AccountCreatedEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, Guid.NewGuid(), userId, balance, new Money(0m, balance.Currency) ,type));
+        => Raise(new AccountCreatedEvent(Guid.NewGuid(),
+                                         DateTimeOffset.UtcNow,
+                                         Guid.NewGuid(), 
+                                         userId, 
+                                         balance, 
+                                         new Money(0m, balance.Currency) 
+                                         ,type));
     
     public Account(Guid accountId)
     {
@@ -99,7 +111,7 @@ public sealed class Account : AggregateRoot
         if (Type != AccountType.CreditCard)
             throw new InvalidOperationException("Only credit card accounts can process credit payments.");
 
-        Raise(new CredidCardStatementPaymentEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, Id, UserId, amount));
+        Raise(new CreditCardStatementPaymentEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, Id, UserId, amount));
     }
 
     public void Close()
@@ -114,8 +126,10 @@ public sealed class Account : AggregateRoot
     public override void RebuildFromEvents(List<IDomainEvent> events)
     {
         ClearUncommittedEvents();
+
         foreach (var evt in events)
             Apply(evt);
+
         SetAggregateVersions(events.Count);
     }
     private void CalculateCreditLimit(Money balance)
@@ -196,13 +210,13 @@ public sealed class Account : AggregateRoot
             case AccountCreatedEvent e:
                 
                 Id = e.Id;
-                UserId = e.userId;
-                Type = e.type;
-                CurrentDebt = e.debt;
+                UserId = e.UserId;
+                Type = e.Type;
+                CurrentDebt = e.Debt;
                 CreatedAt = e.Timestamp;
 
-                if (ValidateInitialBalance(e.balance))
-                    Balance = e.balance;
+                if (ValidateInitialBalance(e.Balance))
+                    Balance = e.Balance;
 
                 CalculateCreditLimit(Balance);
 
@@ -212,16 +226,9 @@ public sealed class Account : AggregateRoot
 
             case UpdatedAccountEvent e:
 
-                Id = e.Id;
-                UserId = e.userId;
-                Type = e.type;
-                CurrentDebt = e.debt;
+                Type = e.Type;                
                 UpdatedAt = e.Timestamp;
-
-                if (ValidateInitialBalance(e.balance))
-                    Balance = e.balance;
-                
-                CalculateCreditLimit(Balance);
+                PaymentDate = e.PaymentDate;              
                
                 break;
 
@@ -230,7 +237,7 @@ public sealed class Account : AggregateRoot
                 RecalculateDebt();
                 break;
 
-            case CredidCardStatementPaymentEvent e:
+            case CreditCardStatementPaymentEvent e:
 
                 ValidateCreditCardDueDate();
 

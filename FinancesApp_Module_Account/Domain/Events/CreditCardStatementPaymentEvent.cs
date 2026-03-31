@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace FinancesApp_Module_Account.Domain.Events;
-public record CredidCardStatementPaymentEvent(Guid EventId,
+public record CreditCardStatementPaymentEvent(Guid EventId,
                                               DateTimeOffset Timestamp,
                                               Guid AccountId,
                                               Guid UserId,
