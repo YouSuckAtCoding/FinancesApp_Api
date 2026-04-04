@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FinancesApp_Api.Controllers;
-
+[Authorize]
 [ApiController]
 public class AccountController(IQueryHandler<GetAccounts, IReadOnlyList<Account>> getAccountsHandler,
                                IQueryHandler<GetAccountById, Account> getAccountByIdHandler,
@@ -19,7 +19,7 @@ public class AccountController(IQueryHandler<GetAccounts, IReadOnlyList<Account>
                                ICommandHandler<ApplyDelta, bool> applyDeltaHandler) : ControllerBase
 {
 
-    [Authorize]
+
     [HttpGet(AccountEndpoints.GetAccounts)]
     public async Task<IActionResult> GetAccounts(CancellationToken token = default)
     {

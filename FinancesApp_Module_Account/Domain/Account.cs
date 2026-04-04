@@ -57,10 +57,33 @@ public sealed class Account : AggregateRoot
                    Money currentDebt,
                    AccountStatus status, 
                    AccountType type,
-                   DateTimeOffset? paymentDate,
                    DateTimeOffset? dueDate,
                    DateTimeOffset createdAt, 
                    DateTimeOffset? closedAt)
+    {
+        Id = id;
+        UserId = userId;
+        Balance = balance;
+        CreditLimit = creditLimit;
+        CurrentDebt = currentDebt;
+        Status = status;
+        Type = type;
+        DueDate = dueDate;
+        CreatedAt = createdAt;
+        ClosedAt = closedAt;
+    }
+
+    public Account(Guid id,
+                Guid userId,
+                Money balance,
+                Money creditLimit,
+                Money currentDebt,
+                AccountStatus status,
+                AccountType type,
+                DateTimeOffset? paymentDate,
+                DateTimeOffset? dueDate,
+                DateTimeOffset createdAt,
+                DateTimeOffset? closedAt)
     {
         Id = id;
         UserId = userId;
@@ -247,7 +270,7 @@ public sealed class Account : AggregateRoot
                 if (CurrentDebt.IsZero)
                     PayedAt = DateTimeOffset.UtcNow;
 
-                SetCreditCardPaymentDates();
+                SetCreditCardPaymentDates(e.Timestamp);
 
                 break;
 
@@ -256,15 +279,17 @@ public sealed class Account : AggregateRoot
         }
     }
 
-    private void SetCreditCardPaymentDates()
+    private void SetCreditCardPaymentDates(DateTimeOffset? payedAt = default)
     {
         if (Type != AccountType.CreditCard)
             return;
 
         var now = DateTimeOffset.UtcNow;
+        
+        if(payedAt.HasValue)
+            PaymentDate = payedAt.Value;
 
-        PaymentDate = new DateTimeOffset(now.Year, now.Month + 1, 1, 0, 0, 0, now.Offset);
-        DueDate = new DateTimeOffset(now.Year, now.Month + 1, 10, 23, 59, 59, now.Offset);
+        DueDate = new DateTimeOffset(now.Year, now.Month == 12 ? 1 : now.Month + 1, 10, 23, 59, 59, now.Offset);
     }
 
     private void UpdateCredit(Money delta, 

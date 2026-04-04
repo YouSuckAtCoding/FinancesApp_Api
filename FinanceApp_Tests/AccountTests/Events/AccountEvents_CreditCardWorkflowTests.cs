@@ -1,5 +1,4 @@
 ﻿using FinancesApp_CQRS.EventStore;
-using FinancesApp_CQRS.Interfaces;
 using FinancesApp_Module_Account.Domain;
 using FinancesApp_Module_Account.Domain.ValueObjects;
 using FinancesApp_Tests.Fixtures;
@@ -161,18 +160,6 @@ public class AccountEvents_CreditCardWorkflowTests : IClassFixture<SqlFixture>
     }
 
     [Fact]
-    void Should_Set_PaymentDate_To_1st_Of_Next_Month_On_Creation()
-    {
-        var account = CreateCreditCard();
-        var now = DateTimeOffset.UtcNow;
-        var expectedMonth = now.Month == 12 ? 1 : now.Month + 1;
-
-        account.PaymentDate.Should().NotBeNull();
-        account.PaymentDate!.Value.Day.Should().Be(1);
-        account.PaymentDate!.Value.Month.Should().Be(expectedMonth);
-    }
-
-    [Fact]
     void Should_Raise_DebtRecalculatedEvent_When_DueDate_Is_Overdue()
     {
         // Arrange — simulate an overdue account by manipulating DueDate
@@ -191,7 +178,6 @@ public class AccountEvents_CreditCardWorkflowTests : IClassFixture<SqlFixture>
             currentDebt: new Money(1000m, "USD"),
             status: AccountStatus.Active,
             type: AccountType.CreditCard,
-            paymentDate: DateTimeOffset.UtcNow.AddDays(-20),
             dueDate: DateTimeOffset.UtcNow.AddDays(-5),   // ← overdue
             createdAt: DateTimeOffset.UtcNow.AddDays(-30),
             closedAt: null
@@ -222,7 +208,6 @@ public class AccountEvents_CreditCardWorkflowTests : IClassFixture<SqlFixture>
             currentDebt: new Money(originalDebt, "USD"),
             status: AccountStatus.Active,
             type: AccountType.CreditCard,
-            paymentDate: DateTimeOffset.UtcNow.AddDays(-20),
             dueDate: DateTimeOffset.UtcNow.AddDays(-daysPastDue),
             createdAt: DateTimeOffset.UtcNow.AddDays(-30),
             closedAt: null
@@ -260,7 +245,6 @@ public class AccountEvents_CreditCardWorkflowTests : IClassFixture<SqlFixture>
             currentDebt: new Money(1000m, "USD"),
             status: AccountStatus.Active,
             type: AccountType.CreditCard,
-            paymentDate: DateTimeOffset.UtcNow.AddDays(-20),
             dueDate: DateTimeOffset.UtcNow.AddDays(-5),
             createdAt: DateTimeOffset.UtcNow.AddDays(-30),
             closedAt: null
@@ -270,7 +254,6 @@ public class AccountEvents_CreditCardWorkflowTests : IClassFixture<SqlFixture>
 
         // After payment, dates should be reset to next cycle
         overdueAccount.DueDate!.Value.Should().BeAfter(DateTimeOffset.UtcNow);
-        overdueAccount.PaymentDate!.Value.Should().BeAfter(DateTimeOffset.UtcNow);
     }
 
     // ════════════════════════════════════════════════════════════════════════

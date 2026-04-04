@@ -68,11 +68,8 @@ public class AccountDomainTests
     {
         var account = new Account(Guid.NewGuid(), new Money(0m, "USD"), AccountType.CreditCard);
         var now = DateTimeOffset.UtcNow;
-        var expectedMonth = now.Month == 12 ? 1 : now.Month + 1;
 
-        account.PaymentDate.Should().NotBeNull();
         account.DueDate.Should().NotBeNull();
-        account.PaymentDate!.Value.Month.Should().Be(expectedMonth);
         account.DueDate!.Value.Day.Should().Be(10);
     }
 
