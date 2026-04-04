@@ -60,14 +60,19 @@ The Account aggregate is fully event-sourced. All state mutations produce domain
 | `UpdatedAccountEvent` | Full account state sync |
 | `AccountClosedEvent` | Account closed |
 
+---
+
 ## 📤 Outbox Pattern
 
 Guarantees **transactional consistency** between the Event Store and downstream side effects. Events are written to the `[Outbox]` table in the **same transaction** as the Event Store append.
+
+---
 
 ## 📊 Projections & Idempotency
 
 Projections build **read-optimized tables** from domain events, keeping the Event Store as the single source of truth without polluting it with read concerns.
 
+---
 
 ## 🔐 Authentication & Identity
 
@@ -75,9 +80,13 @@ Projections build **read-optimized tables** from domain events, keeping the Even
 - **Identity.Api** — A dedicated microservice responsible for token generation (`TokenGenerationRequest`), with its own Dockerfile and configuration.
 - **API Versioning** — Endpoints are versioned for backward compatibility.
 
+---
+
 ## 📈 Observability — Prometheus & Grafana
 
 The application exposes Prometheus metrics for critical infrastructure components.
+
+---
 
 ### Docker Compose Services
 
@@ -231,6 +240,8 @@ Commands e queries são completamente separados:
 - `ICommand` → `ICommandHandler<TCommand>` → `ICommandDispatcher`
 - `IQuery<TResult>` → `IQueryHandler<TQuery, TResult>` → `IQueryDispatcher`
 
+---
+
 ## 📦 Event Sourcing
 
 O agregado Account é inteiramente baseado em Event Sourcing. Todas as mutações de estado produzem eventos de domínio que são adicionados ao Event Store.
@@ -249,6 +260,8 @@ O agregado Account é inteiramente baseado em Event Sourcing. Todas as mutaçõe
 | `UpdatedAccountEvent` | Sincronização completa do estado da conta |
 | `AccountClosedEvent` | Conta encerrada |
 
+---
+
 ## 📤 Padrão Outbox
 
 Garante **consistência transacional** entre o Event Store e efeitos colaterais downstream. Eventos são escritos na tabela `[Outbox]` na **mesma transação** do append no Event Store.
@@ -262,6 +275,8 @@ Garante **consistência transacional** entre o Event Store e efeitos colaterais 
 ## 📊 Projeções & Idempotência
 
 Projeções constroem **tabelas otimizadas para leitura** a partir de eventos de domínio, mantendo o Event Store como fonte única da verdade.
+
+---
 
 ## 🔐 Autenticação & Identidade
 
