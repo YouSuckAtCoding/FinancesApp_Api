@@ -64,11 +64,6 @@ The Account aggregate is fully event-sourced. All state mutations produce domain
 
 Guarantees **transactional consistency** between the Event Store and downstream side effects. Events are written to the `[Outbox]` table in the **same transaction** as the Event Store append.
 
-### Concurrency Safety
-
-- Pending entries are fetched with `UPDLOCK, READPAST` hints, ensuring multiple processor instances won't pick up the same batch.
-- 
-
 ## 📊 Projections & Idempotency
 
 Projections build **read-optimized tables** from domain events, keeping the Event Store as the single source of truth without polluting it with read concerns.
