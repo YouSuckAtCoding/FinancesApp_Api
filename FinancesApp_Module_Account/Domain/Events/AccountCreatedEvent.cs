@@ -10,9 +10,9 @@ namespace FinancesApp_Module_Account.Domain.Events;
 public record AccountCreatedEvent(Guid EventId,
                                   DateTimeOffset Timestamp,
                                   Guid Id,
-                                  Guid userId,
-                                  Money balance,
-                                  Money debt,
-                                  AccountType type) : IDomainEvent
+                                  Guid UserId,
+                                  Money Balance,
+                                  Money Debt,
+                                  AccountType Type) : IDomainEvent
 {
 }

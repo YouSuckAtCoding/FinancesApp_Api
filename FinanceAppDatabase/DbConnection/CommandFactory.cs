@@ -139,7 +139,6 @@ public class CommandFactory : ICommandFactory
         using var command = connection.CreateCommand();
 
         command.CommandText = commandText;
-
         command.CommandType = options.commandType;
         command.Transaction = transaction;
 

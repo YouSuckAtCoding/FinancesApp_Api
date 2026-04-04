@@ -1,12 +1,13 @@
 ﻿using FinancesApp_CQRS.Interfaces;
+using FinancesApp_Module_Account.Domain.ValueObjects;
 
 namespace FinancesApp_Module_Account.Domain.Events;
 public record DepositEvent(Guid EventId,
-                            DateTimeOffset Timestamp,
-                            Guid AccountId,
-                            Guid UserId,
-                            decimal Value,
-                            DateTimeOffset depositedAt) : IDomainEvent
+                           DateTimeOffset Timestamp,
+                           Guid AccountId,
+                           Guid UserId,
+                           Money Amount,
+                           DateTimeOffset DepositedAt) : IDomainEvent
 {
 }
 

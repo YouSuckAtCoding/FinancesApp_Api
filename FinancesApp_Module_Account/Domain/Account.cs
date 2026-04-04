@@ -33,9 +33,13 @@ public sealed class Account : AggregateRoot
 
     public Account(Guid userId,
                    Money balance,
-                   AccountType type) 
-        => Raise(new AccountCreatedEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, Guid.NewGuid(), userId, balance, new Money(0m, balance.Currency) ,type));
-    
+                   AccountType type)
+    {
+        Raise(new AccountCreatedEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, Guid.NewGuid(), userId, balance, new Money(0m, balance.Currency), type));
+        CalculateCreditLimit(Balance);
+    }
+
+
     public Account(Guid accountId)
     {
         Id = accountId;  
@@ -85,9 +89,9 @@ public sealed class Account : AggregateRoot
         }
         
         if (transactionType == TransactionType.Withdraw)
-            Raise(new WithdrawEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, Id, UserId, delta.Amount, DateTimeOffset.UtcNow));
+            Raise(new WithdrawEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, Id, UserId, delta, DateTimeOffset.UtcNow));
         else
-            Raise(new DepositEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, Id, UserId, delta.Amount, DateTimeOffset.UtcNow));
+            Raise(new DepositEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, Id, UserId, delta, DateTimeOffset.UtcNow));
 
     }
 
@@ -123,7 +127,11 @@ public sealed class Account : AggregateRoot
 
         if(Type == AccountType.CreditCard)
         {
-            CreditLimit = new Money(4500m, balance.Currency);
+            Raise(new CalculatedCreditLimitEvent(Guid.NewGuid(),
+                                                 DateTimeOffset.UtcNow,
+                                                 Id,
+                                                 UserId,
+                                                 new Money(4500m, balance.Currency)));          
             return;
         }
 
@@ -162,14 +170,41 @@ public sealed class Account : AggregateRoot
     {
         switch (evt)
         {
+            case AccountCreatedEvent e:
+
+                Id = e.Id;
+                UserId = e.UserId;
+                Type = e.Type;
+                CurrentDebt = e.Debt;
+                CreatedAt = e.Timestamp;
+
+                if (ValidateInitialBalance(e.Balance))
+                    Balance = e.Balance;
+                break;
+
+            case UpdatedAccountEvent e:
+
+                Id = e.Id;
+                UserId = e.userId;
+                Type = e.type;
+                CurrentDebt = e.debt;
+                UpdatedAt = e.Timestamp;
+
+                if (ValidateInitialBalance(e.balance))
+                    Balance = e.balance;
+
+                CalculateCreditLimit(Balance);
+
+                break;
+
             case DepositEvent e:
 
-                Balance = Balance.Add(new Money(e.Value, Balance.Currency));
+                Balance = Balance.Add(e.Amount);
                 break;
 
             case WithdrawEvent e:
 
-                var newBalance = Balance.Subtract(new Money(e.Value, Balance.Currency));
+                var newBalance = Balance.Subtract(e.Amount);
                 
                 if (Type == AccountType.Cash && newBalance.Amount < 0)
                     throw new InvalidOperationException("Insufficient funds in cash account.");
@@ -180,6 +215,7 @@ public sealed class Account : AggregateRoot
             case CalculatedCreditLimitEvent e:
 
                 CreditLimit = new Money(e.Value.Amount, e.Value.Currency);
+                SetCreditCardPaymentDates();
                 break;
 
             case CreditUpdatedEvent e:
@@ -193,38 +229,7 @@ public sealed class Account : AggregateRoot
                 ClosedAt = DateTimeOffset.UtcNow;
                 break;
 
-            case AccountCreatedEvent e:
-                
-                Id = e.Id;
-                UserId = e.userId;
-                Type = e.type;
-                CurrentDebt = e.debt;
-                CreatedAt = e.Timestamp;
-
-                if (ValidateInitialBalance(e.balance))
-                    Balance = e.balance;
-
-                CalculateCreditLimit(Balance);
-
-                SetCreditCardPaymentDates();
-              
-                break;
-
-            case UpdatedAccountEvent e:
-
-                Id = e.Id;
-                UserId = e.userId;
-                Type = e.type;
-                CurrentDebt = e.debt;
-                UpdatedAt = e.Timestamp;
-
-                if (ValidateInitialBalance(e.balance))
-                    Balance = e.balance;
-                
-                CalculateCreditLimit(Balance);
-               
-                break;
-
+            
             case DebtRecalculatedEvent:
 
                 RecalculateDebt();

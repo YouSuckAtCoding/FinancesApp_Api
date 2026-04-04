@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace FinancesApp_Module_Account.Domain.Events;
-internal record AccountClosedEvent(Guid EventId,
+public record AccountClosedEvent(Guid EventId,
                                   DateTimeOffset Timestamp,
                                   Guid AccountId,
                                   Guid UserId) : IDomainEvent

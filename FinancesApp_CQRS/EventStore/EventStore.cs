@@ -1,6 +1,7 @@
 ﻿using FinanceAppDatabase.DbConnection;
 using FinancesApp_CQRS.Interfaces;
 using Microsoft.Data.SqlClient;
+using Prometheus;
 using System.Data;
 using System.Text.Json;
 
@@ -8,6 +9,26 @@ namespace FinancesApp_CQRS.EventStore;
 public class EventStore(ICommandFactory commandFactory,
                         IDbConnectionFactory connectionFactory) : IDisposable, IEventStore
 {
+    private static readonly Counter EventsAppended = Metrics
+        .CreateCounter("eventstore_append_total", "Total number of events appended to the event store");
+
+    private static readonly Histogram AppendDuration = Metrics
+        .CreateHistogram("eventstore_append_duration_seconds", "Event store append processing time",
+            new HistogramConfiguration
+            {
+                Buckets = Histogram.LinearBuckets(start: 0.1, width: 0.1, count: 10)
+            });
+
+    private static readonly Counter EventsLoaded = Metrics
+        .CreateCounter("eventstore_load_total", "Total number of event batches loaded from the event store");
+
+    private static readonly Histogram LoadDuration = Metrics
+        .CreateHistogram("eventstore_load_duration_seconds", "Event store load processing time",
+            new HistogramConfiguration
+            {
+                Buckets = Histogram.LinearBuckets(start: 0.1, width: 0.1, count: 10)
+            });
+
     public async Task Append(Guid aggregateId,
                             IReadOnlyList<IDomainEvent> events, 
                             int expectedVersion,
@@ -15,34 +36,46 @@ public class EventStore(ICommandFactory commandFactory,
     {
         if (events.Count == 0) return;
 
-        try
+        using (AppendDuration.NewTimer())
         {
-            await connectionFactory.ExecuteInScopeWithTransactionAsync(async (connection, transaction) =>
+            try
             {
-                var currentVersion = await GetCurrentVersion(aggregateId, connection, transaction);
-
-                if (currentVersion != expectedVersion)
-                    throw new ConcurrencyException(
-                        $"Concurrency conflict on aggregate {aggregateId}. " +
-                        $"Expected version {expectedVersion}, found {currentVersion}.");
-             
-                for (int i = 0; i < events.Count; i++)
+                await connectionFactory.ExecuteInScopeWithTransactionAsync(async (connection, transaction) =>
                 {
-                    var evt = events[i];
-                    var version = expectedVersion + (i + 1);
-                    await InsertEvent(evt,
-                                      aggregateId,
-                                      version,
-                                      connection,
-                                      transaction,
-                                      token);
-                }
+                    var currentVersion = await GetCurrentVersion(aggregateId, connection, transaction);
 
-            }, token);
-        }
-        catch
-        {
-            throw;
+                    if (currentVersion != expectedVersion)
+                        throw new ConcurrencyException(
+                            $"Concurrency conflict on aggregate {aggregateId}. " +
+                            $"Expected version {expectedVersion}, found {currentVersion}.");
+
+                    for (int i = 0; i < events.Count; i++)
+                    {
+                        var evt = events[i];
+                        var version = expectedVersion + (i + 1);
+
+                        await InsertEvent(evt,
+                                          aggregateId,
+                                          version,
+                                          connection,
+                                          transaction,
+                                          token);
+
+                        await InsertOutbox(evt,
+                                           aggregateId,
+                                           connection,
+                                           transaction,
+                                           token);
+                    }
+
+                }, token);
+
+                EventsAppended.Inc(events.Count);
+            }
+            catch
+            {
+                throw;
+            }
         }
     }
     public async Task<List<IDomainEvent>> Load(Guid aggregateId,
@@ -57,27 +90,33 @@ public class EventStore(ICommandFactory commandFactory,
                                    ORDER BY version ASC
                                    """;
 
-        return await commandFactory.ExecuteAsync(
-            commandText: CommandText,
-            options: new CreateSqlCommandOptions
-            {
-                Parameters = [
-                    new SqlParameter("@aggregateId", SqlDbType.UniqueIdentifier) { Value = aggregateId },
-                    new SqlParameter("@fromVersion", SqlDbType.Int) { Value = fromVersion }
-                ]
-            },
-            operation: async cmd =>
-            {
-                var events = new List<IDomainEvent>();
-                using var reader = await cmd.ExecuteReaderAsync();
-                while (await reader.ReadAsync())
+        using (LoadDuration.NewTimer())
+        {
+            var events = await commandFactory.ExecuteAsync(
+                commandText: CommandText,
+                options: new CreateSqlCommandOptions
                 {
-                    var eventType = reader.GetString(0);
-                    var payload = reader.GetString(1);
-                    events.Add(Deserialize(eventType, payload));
-                }
-                return events;
-            }, token: token);
+                    Parameters = [
+                        new SqlParameter("@aggregateId", SqlDbType.UniqueIdentifier) { Value = aggregateId },
+                        new SqlParameter("@fromVersion", SqlDbType.Int) { Value = fromVersion }
+                    ]
+                },
+                operation: async cmd =>
+                {
+                    var results = new List<IDomainEvent>();
+                    using var reader = await cmd.ExecuteReaderAsync();
+                    while (await reader.ReadAsync())
+                    {
+                        var eventType = reader.GetString("event_type");
+                        var payload = reader.GetString("payload");
+                        results.Add(Deserialize(eventType, payload));
+                    }
+                    return results;
+                }, token: token);
+
+            EventsLoaded.Inc();
+            return events;
+        }
     }
 
     public async Task<List<IDomainEvent>> LoadByDateRange(Guid aggregateId,
@@ -108,8 +147,8 @@ public class EventStore(ICommandFactory commandFactory,
                 using var reader = await cmd.ExecuteReaderAsync();
                 while (await reader.ReadAsync())
                 {
-                    var eventType = reader.GetString(0);
-                    var payload = reader.GetString(1);
+                    var eventType = reader.GetString("event_type");
+                    var payload = reader.GetString("payload");
                     events.Add(Deserialize(eventType, payload));
                 }
                 return events;
@@ -140,8 +179,8 @@ public class EventStore(ICommandFactory commandFactory,
                 using var reader = await cmd.ExecuteReaderAsync();
                 while (await reader.ReadAsync())
                 {
-                    var eventType = reader.GetString(0);
-                    var payload = reader.GetString(1);
+                    var eventType = reader.GetString("event_type");
+                    var payload = reader.GetString("payload");
                     events.Add(Deserialize(eventType, payload));
                 }
                 return events;
@@ -149,6 +188,9 @@ public class EventStore(ICommandFactory commandFactory,
             token: token);
 
     }
+    public Task Append(Guid aggregateId, IDomainEvent evt, int expectedVersion, CancellationToken token = default)
+        => Append(aggregateId, [evt], expectedVersion, token);
+
     private async Task InsertEvent(IDomainEvent evt,
                                    Guid aggregateId,
                                    int version,
@@ -192,7 +234,7 @@ public class EventStore(ICommandFactory commandFactory,
 
         const string CommandText = """
                                    SELECT COALESCE(MAX(version), 0)
-                                   FROM [FinanceApp].[dbo].[Events]
+                                   FROM [FinanceApp].[dbo].[Events] WITH (UPDLOCK, ROWLOCK)
                                    WHERE Aggregate_Id = @aggregateId
                                    """;
         return await commandFactory.ExecuteAsync(
@@ -232,11 +274,35 @@ public class EventStore(ICommandFactory commandFactory,
             $"Cannot resolve event type '{eventType}'. " +
             $"Ensure the assembly containing this event is loaded.");
     }
-
-    public void Dispose()
+    private async Task InsertOutbox(IDomainEvent evt,
+                                    Guid aggregateId,
+                                    SqlConnection connection,
+                                    SqlTransaction transaction,
+                                    CancellationToken token = default)
     {
-        throw new NotImplementedException();
+        const string CommandText = """
+        INSERT INTO [FinanceApp].[dbo].[Outbox] (event_id, aggregate_id, event_type, payload, created_at)
+        VALUES (@eventId, @aggregateId, @eventType, @payload, @createdAt)
+        """;
+
+        await commandFactory.ExecuteAsync(
+            commandText: CommandText,
+            connection: connection,
+            transaction: transaction,
+            options: new CreateSqlCommandOptions
+            {
+                Parameters = [
+                    new SqlParameter("@eventId", SqlDbType.UniqueIdentifier) { Value = evt.EventId },
+                    new SqlParameter("@aggregateId", SqlDbType.UniqueIdentifier) { Value = aggregateId },
+                    new SqlParameter("@eventType", SqlDbType.NVarChar, 255) { Value = evt.GetType().FullName },
+                    new SqlParameter("@payload", SqlDbType.NVarChar, -1) { Value = JsonSerializer.Serialize(evt, evt.GetType()) },
+                    new SqlParameter("@createdAt", SqlDbType.DateTimeOffset) { Value = evt.Timestamp }
+                ]
+            },
+            operation: async cmd => await cmd.ExecuteNonQueryAsync(),
+            token: token);
     }
+    public void Dispose() { }
 }
 public class ConcurrencyException(string message) : Exception(message)
 {

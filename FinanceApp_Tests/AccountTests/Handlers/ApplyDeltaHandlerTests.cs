@@ -12,7 +12,7 @@ namespace FinancesApp_Tests.AccountTests.Handlers;
 public class ApplyDeltaHandlerTests
 {
     private readonly Mock<IAccountRepository> _repoMock;
-    private readonly Mock<IEventStore> _storeMock;
+    private readonly Mock<IEventStore> _mockStore;
     private readonly Mock<ILogger<CreateAccountHandler>> _loggerMock;
     private readonly ApplyDeltaHandler _handler;
 
@@ -24,8 +24,8 @@ public class ApplyDeltaHandlerTests
     {
         _repoMock = new Mock<IAccountRepository>();
         _loggerMock = new Mock<ILogger<CreateAccountHandler>>();
-        _storeMock = new Mock<IEventStore>();
-        _handler = new ApplyDeltaHandler(_loggerMock.Object, _repoMock.Object, _storeMock.Object);
+        _mockStore = new Mock<IEventStore>();
+        _handler = new ApplyDeltaHandler(_loggerMock.Object, _repoMock.Object, _mockStore.Object);
     }
 
     private static Account BuildCheckingAccount() =>
@@ -53,12 +53,12 @@ public class ApplyDeltaHandlerTests
         var account = BuildCheckingAccount();
         var command = BuildCommand(account);
 
-        _storeMock.Setup(r => r.Append(account.Id, account.GetUncommittedEvents(), account.CurrentVersion,It.IsAny<CancellationToken>()));
+        _mockStore.Setup(r => r.Append(account.Id, account.GetUncommittedEvents(), account.CurrentVersion,It.IsAny<CancellationToken>()));
 
         var result = await _handler.Handle(command);
 
         Assert.True(result);
-        _storeMock.Verify(r => r.Append(account.Id, account.GetUncommittedEvents(), account.CurrentVersion, It.IsAny<CancellationToken>()),
+        _mockStore.Verify(r => r.Append(account.Id, account.GetUncommittedEvents(), account.CurrentVersion, It.IsAny<CancellationToken>()),
                           Times.Once);
     }
 
@@ -105,7 +105,7 @@ public class ApplyDeltaHandlerTests
         var command = BuildCommand(account);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => _handler.Handle(command));
-        _storeMock.Verify(r => r.Append(account.Id, account.GetUncommittedEvents(), account.CurrentVersion, It.IsAny<CancellationToken>()),
+        _mockStore.Verify(r => r.Append(account.Id, account.GetUncommittedEvents(), account.CurrentVersion, It.IsAny<CancellationToken>()),
                           Times.Never);
         
     }
@@ -118,7 +118,7 @@ public class ApplyDeltaHandlerTests
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => _handler.Handle(command));
 
-        _storeMock.Verify(r => r.Append(account.Id, account.GetUncommittedEvents(), account.CurrentVersion, It.IsAny<CancellationToken>()),
+        _mockStore.Verify(r => r.Append(account.Id, account.GetUncommittedEvents(), account.CurrentVersion, It.IsAny<CancellationToken>()),
                          Times.Never);
 
     }
@@ -141,7 +141,7 @@ public class ApplyDeltaHandlerTests
         var command = BuildCommand(account, value: 5000m, operationType: OperationType.CreditPurchase);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => _handler.Handle(command));
-        _storeMock.Verify(r => r.Append(account.Id, account.GetUncommittedEvents(), account.CurrentVersion, It.IsAny<CancellationToken>()),
+        _mockStore.Verify(r => r.Append(account.Id, account.GetUncommittedEvents(), account.CurrentVersion, It.IsAny<CancellationToken>()),
                     Times.Never);
     }
 

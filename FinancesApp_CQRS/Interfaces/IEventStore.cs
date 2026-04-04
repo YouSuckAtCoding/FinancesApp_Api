@@ -6,6 +6,10 @@ public interface IEventStore
                 IReadOnlyList<IDomainEvent> events,
                 int expectedVersion,
                 CancellationToken token = default);
+    Task Append(Guid aggregateId,
+                IDomainEvent evt,
+                int expectedVersion,
+                CancellationToken token = default);
     Task<List<IDomainEvent>> Load(Guid aggregateId, int fromVersion = 0, CancellationToken token = default);
     Task<List<IDomainEvent>> LoadAuditLog(DateTimeOffset from, DateTimeOffset to, CancellationToken token = default);
     Task<List<IDomainEvent>> LoadByDateRange(Guid aggregateId, DateTimeOffset from, DateTimeOffset to, CancellationToken token = default);

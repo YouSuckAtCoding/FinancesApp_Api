@@ -9,8 +9,8 @@ public abstract class AggregateRoot
 
     protected void Raise(IDomainEvent evt)
     {
-        Apply(evt);
         _uncommittedEvents.Add(evt);
+        Apply(evt);
         NextVersion++;
     }
     

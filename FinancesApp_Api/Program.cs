@@ -65,6 +65,8 @@ builder.Services.AddCredentialsModule();
 
 var app = builder.Build();
 
+app.AddAccountProjections();
+
 app.UseHealthChecks("/health", new HealthCheckOptions
 {
     ResponseWriter = async (context, report) =>

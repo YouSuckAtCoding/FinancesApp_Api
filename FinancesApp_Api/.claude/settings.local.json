@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find C:\\\\Projetos\\\\PersonalFinance\\\\Api:*)",
+      "Bash(powershell:*)"
+    ]
+  }
+}

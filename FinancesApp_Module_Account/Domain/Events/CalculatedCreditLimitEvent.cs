@@ -2,7 +2,7 @@
 using FinancesApp_Module_Account.Domain.ValueObjects;
 
 namespace FinancesApp_Module_Account.Domain.Events;
-internal record CalculatedCreditLimitEvent(Guid EventId,
+public record CalculatedCreditLimitEvent(Guid EventId,
                                            DateTimeOffset Timestamp,
                                            Guid AccountId,
                                            Guid UserId,
