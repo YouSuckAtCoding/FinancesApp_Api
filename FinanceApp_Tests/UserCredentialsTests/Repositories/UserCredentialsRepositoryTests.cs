@@ -230,6 +230,7 @@ public class UserCredentialsRepositoryTests : IClassFixture<SqlFixture>
         Guid newUserId = await CreateNewUser(connection);
 
         return new UserCredentials(
+             id: Guid.NewGuid(),
              userId: newUserId,
              login: $"usr_{Guid.NewGuid():N}"[..15],
              passwordHash: "$2a$11$examplehashedpasswordvalue12345"

@@ -12,13 +12,13 @@ namespace FinancesApp_Tests.UserTests.Handlers;
 public class GetUsersHandlerTests
 {
     private readonly IUserReadRepository _mockRepository;
-    private readonly ILogger<GetUserByIdHandler> _mockLogger;
+    private readonly ILogger<GetUsersHandler> _mockLogger;
     private readonly GetUsersHandler _handler;
 
     public GetUsersHandlerTests()
     {
         _mockRepository = Substitute.For<IUserReadRepository>();
-        _mockLogger = Substitute.For<ILogger<GetUserByIdHandler>>();
+        _mockLogger = Substitute.For<ILogger<GetUsersHandler>>();
         _handler = new GetUsersHandler(_mockRepository, _mockLogger);
     }
 

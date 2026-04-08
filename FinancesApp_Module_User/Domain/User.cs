@@ -1,15 +1,19 @@
-﻿namespace FinancesApp_Module_User.Domain;
-public class User
+using FinancesApp_CQRS.Interfaces;
+using FinancesApp_Module_User.Domain.Events;
+
+namespace FinancesApp_Module_User.Domain;
+public class User : AggregateRoot
 {
     private int age;
 
-    public Guid Id { get; }
+    public Guid Id { get; private set; }
     public string Name { get; private set; } = "";
     public string Email { get; private set; } = "";
     public DateTimeOffset RegisteredAt { get; private set; }
     public DateTimeOffset ModifiedAt { get; private set; }
     public DateTimeOffset DateOfBirth { get; private set; }
     public string ProfileImage { get; private set; } = "";
+    public bool IsDeleted { get; private set; }
     public int Age
     {
         get
@@ -29,12 +33,12 @@ public class User
 
     }
 
-    public User(Guid id, 
+    public User(Guid id,
                 string name,
                 string email,
                 DateTimeOffset registeredAt,
                 DateTimeOffset modifiedAt,
-                DateTimeOffset dateOfBirth, 
+                DateTimeOffset dateOfBirth,
                 string profileImage)
     {
         Id = id;
@@ -46,9 +50,9 @@ public class User
         ProfileImage = profileImage;
     }
 
-    public User(string name, 
-                string email, 
-                DateTimeOffset dateOfBirth, 
+    public User(string name,
+                string email,
+                DateTimeOffset dateOfBirth,
                 string profileImage)
     {
         Id = Guid.NewGuid();
@@ -59,9 +63,18 @@ public class User
         ProfileImage = profileImage;
         RegisteredAt = DateTimeOffset.Now;
         ModifiedAt = DateTimeOffset.Now;
+
+        Raise(new UserCreatedEvent(Guid.NewGuid(),
+                                   DateTimeOffset.UtcNow,
+                                   Id,
+                                   Name,
+                                   Email,
+                                   DateOfBirth,
+                                   ProfileImage,
+                                   RegisteredAt));
     }
 
-    public User(Guid id, 
+    public User(Guid id,
                 string name,
                 string email,
                 DateTimeOffset dateOfBirth,
@@ -73,10 +86,63 @@ public class User
         DateOfBirth = dateOfBirth;
         ProfileImage = profileImage;
         ModifiedAt = DateTimeOffset.Now;
+
+        Raise(new UserUpdatedEvent(Guid.NewGuid(),
+                                   DateTimeOffset.UtcNow,
+                                   Id,
+                                   Name,
+                                   Email,
+                                   DateOfBirth,
+                                   ProfileImage));
     }
 
     public User()
     {}
+
+    public void Delete()
+    {
+        Raise(new UserDeletedEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, Id));
+    }
+
+    public override void RebuildFromEvents(List<IDomainEvent> events)
+    {
+        ClearUncommittedEvents();
+        foreach (var evt in events)
+            Apply(evt);
+        SetAggregateVersions(events.Count);
+    }
+
+    protected override void Apply(IDomainEvent evt)
+    {
+        switch (evt)
+        {
+            case UserCreatedEvent e:
+                Id = e.Id;
+                Name = e.Name;
+                Email = e.Email;
+                DateOfBirth = e.DateOfBirth;
+                ProfileImage = e.ProfileImage;
+                RegisteredAt = e.RegisteredAt;
+                ModifiedAt = e.Timestamp;
+                break;
+
+            case UserUpdatedEvent e:
+                Name = e.Name;
+                Email = e.Email;
+                DateOfBirth = e.DateOfBirth;
+                ProfileImage = e.ProfileImage;
+                ModifiedAt = e.Timestamp;
+                break;
+
+            case UserDeletedEvent:
+                IsDeleted = true;
+                break;
+
+            default:
+                throw new NotImplementedException(
+                    string.Format("No event handler for selected operation {0}", evt.GetType().Name));
+        }
+    }
 
     private static string ValidateName(string name)
     {
@@ -104,7 +170,7 @@ public class User
         var today = DateTimeOffset.UtcNow;
 
         if (dateOfBirth > today)
-            throw new ArgumentException("Date of birth cannot be in the future.");       
+            throw new ArgumentException("Date of birth cannot be in the future.");
 
         return dateOfBirth;
     }
@@ -115,5 +181,5 @@ public class User
         if (Age < 16)
             throw new ArgumentException("You're too young buddy.");
         return;
-    }    
+    }
 }

@@ -2,9 +2,9 @@
 using FinancesApp_CQRS.Interfaces;
 using FinancesApp_CQRS.Projections;
 using FinancesApp_CQRS.Queries;
-using FinancesApp_Module_Account.Application;
 using FinancesApp_Module_Account.Application.Commands;
 using FinancesApp_Module_Account.Application.Commands.Handlers;
+using FinancesApp_Module_Account.Application.Projections;
 using FinancesApp_Module_Account.Application.Queries;
 using FinancesApp_Module_Account.Application.Queries.Handlers;
 using FinancesApp_Module_Account.Application.Repositories;

@@ -1,41 +1,46 @@
-﻿using FinancesApp_CQRS.Interfaces;
-using FinancesApp_Module_Credentials.Application.Repositories;
+using FinancesApp_CQRS.Interfaces;
 using FinancesApp_Module_Credentials.Domain;
 using Microsoft.Extensions.Logging;
+using Prometheus;
 
 namespace FinancesApp_Module_Credentials.Application.Queries.Handlers;
-public class GetUserCredentialsByUserIdHandler(IUserCredentialsReadRepository credentialsRepository,
+public class GetUserCredentialsByUserIdHandler(IEventStore eventStore,
                                            ILogger<GetUserCredentialsByUserIdHandler> logger) : IQueryHandler<GetUserCredentialsByUserId, UserCredentials>
 {
-    private readonly IUserCredentialsReadRepository _credentialsRepository = credentialsRepository;
+    private readonly IEventStore _eventStore = eventStore;
     private readonly ILogger<GetUserCredentialsByUserIdHandler> _logger = logger;
+
+    private static readonly Counter GetCredentialsByUserIdCounter = Metrics
+        .CreateCounter("credentials_total_GetByUserId", "Total number of credentials retrieved by user id.");
+
+    private static readonly Histogram GetCredentialsByUserIdDuration = Metrics
+        .CreateHistogram("credentials_GetByUserId_duration_seconds", "Credentials retrieved by user id duration.",
+            new HistogramConfiguration
+            {
+                Buckets = Histogram.LinearBuckets(start: 0.1, width: 0.1, count: 10)
+            });
 
     public async Task<UserCredentials> Handle(GetUserCredentialsByUserId query, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation(
-            "Fetching credentials - UserID: {UserId}",
-            query.UserId);
-
-        var result = new UserCredentials();
-
-        try
+        using (GetCredentialsByUserIdDuration.NewTimer())
         {
-            result = await _credentialsRepository.GetByUserIdAsync(query.UserId, token: cancellationToken);
+            try
+            {
+                var credentials = new UserCredentials();
 
-            if (result is not null)
-                _logger.LogInformation(
-                    "Credentials found - UserID: {UserId}, Login: {Login}",
-                    result.UserId, result.Email);
-            else
-                _logger.LogWarning(
-                    "No credentials found - UserID: {UserId}",
-                    query.UserId);
+                var events = await _eventStore.Load(query.UserId, token: cancellationToken);
 
+                credentials.RebuildFromEvents(events);
+
+                GetCredentialsByUserIdCounter.Inc();
+
+                return credentials;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching credentials for UserID {UserId}", query.UserId);
+                return new UserCredentials();
+            }
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error fetching credentials for UserID {UserId}", query.UserId);
-        }
-        return result!;
     }
 }

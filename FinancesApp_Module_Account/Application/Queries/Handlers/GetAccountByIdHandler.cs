@@ -1,11 +1,7 @@
-﻿using FinancesApp_CQRS.EventStore;
-using FinancesApp_CQRS.Interfaces;
-using FinancesApp_Module_Account.Application.Queries;
-using FinancesApp_Module_Account.Application.Repositories;
+﻿using FinancesApp_CQRS.Interfaces;
 using FinancesApp_Module_Account.Domain;
 using Microsoft.Extensions.Logging;
 using Prometheus;
-using System.Threading;
 
 namespace FinancesApp_Module_Account.Application.Queries.Handlers;
 public class GetAccountByIdHandler(ILogger<GetAccountByIdHandler> logger,

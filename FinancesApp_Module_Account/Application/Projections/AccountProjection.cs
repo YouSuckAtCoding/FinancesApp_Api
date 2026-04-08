@@ -2,7 +2,7 @@ using FinancesApp_CQRS.Interfaces;
 using FinancesApp_Module_Account.Domain;
 using FinancesApp_Module_Account.Domain.Events;
 
-namespace FinancesApp_Module_Account.Application;
+namespace FinancesApp_Module_Account.Application.Projections;
 
 public class AccountProjection(IAccountRepository accountRepository, IProjectionCheckpoint checkpoint) :
     IEventHandler<AccountCreatedEvent>,

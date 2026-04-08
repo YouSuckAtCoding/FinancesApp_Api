@@ -66,6 +66,8 @@ builder.Services.AddCredentialsModule();
 var app = builder.Build();
 
 app.AddAccountProjections();
+app.AddUserProjections();
+app.AddCredentialsProjections();
 
 app.UseHealthChecks("/health", new HealthCheckOptions
 {

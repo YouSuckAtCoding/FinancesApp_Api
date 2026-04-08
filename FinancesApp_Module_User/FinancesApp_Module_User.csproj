@@ -11,8 +11,5 @@
     <ProjectReference Include="..\FinancesApp_CQRS\FinancesApp_CQRS.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Domain\Events\" />
-  </ItemGroup>
 
 </Project>

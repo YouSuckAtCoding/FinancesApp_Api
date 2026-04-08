@@ -1,28 +1,47 @@
-﻿using FinancesApp_CQRS.Interfaces;
-using FinancesApp_Module_User.Application.Repositories;
+using FinancesApp_CQRS.Interfaces;
 using FinancesApp_Module_User.Domain;
 using Microsoft.Extensions.Logging;
+using Prometheus;
 
 namespace FinancesApp_Module_User.Application.Queries.Handlers;
-public class GetUserByIdHandler(IUserReadRepository userReadRepository,
-                                  ILogger<GetUserByIdHandler> logger) : IQueryHandler<GetUserById, User>
+public class GetUserByIdHandler(IEventStore eventStore,
+                                ILogger<GetUserByIdHandler> logger) : IQueryHandler<GetUserById, User>
 {
-    private readonly IUserReadRepository _userReadRepository = userReadRepository;
+    private readonly IEventStore _eventStore = eventStore;
     private readonly ILogger<GetUserByIdHandler> _logger = logger;
+
+    private static readonly Counter GetUserByIdCounter = Metrics
+        .CreateCounter("user_total_GetById", "Total number of users retrieved by id.");
+
+    private static readonly Histogram GetUserByIdDuration = Metrics
+        .CreateHistogram("user_GetById_duration_seconds", "User retrieved by id duration.",
+            new HistogramConfiguration
+            {
+                Buckets = Histogram.LinearBuckets(start: 0.1, width: 0.1, count: 10)
+            });
 
     public async Task<User> Handle(GetUserById query,
                                    CancellationToken token = default)
     {
-        try
+        using (GetUserByIdDuration.NewTimer())
         {
-            var result = await _userReadRepository.GetUserById(query.UserId, token: token);
-            return result;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving user with ID {UserId}", query.UserId);
-            return new User();
+            try
+            {
+                var user = new User();
+
+                var events = await _eventStore.Load(query.UserId, token: token);
+
+                user.RebuildFromEvents(events);
+
+                GetUserByIdCounter.Inc();
+
+                return user;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving user with ID {UserId}", query.UserId);
+                return new User();
+            }
         }
     }
-
 }

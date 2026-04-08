@@ -1,7 +1,8 @@
-﻿using FinancesApp_Module_Credentials.Application.Queries;
+using FinancesApp_CQRS.Interfaces;
+using FinancesApp_Module_Credentials.Application.Queries;
 using FinancesApp_Module_Credentials.Application.Queries.Handlers;
-using FinancesApp_Module_Credentials.Application.Repositories;
 using FinancesApp_Module_Credentials.Domain;
+using FinancesApp_Module_Credentials.Domain.Events;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
@@ -11,49 +12,40 @@ namespace FinancesApp_Tests.UserCredentialsTests.Handlers;
 
 public class GetUserCredentialsByUserIdHandlerTests
 {
-    private readonly IUserCredentialsReadRepository _mockRepository;
+    private readonly IEventStore _mockEventStore;
     private readonly ILogger<GetUserCredentialsByUserIdHandler> _mockLogger;
     private readonly GetUserCredentialsByUserIdHandler _handler;
 
     public GetUserCredentialsByUserIdHandlerTests()
     {
-        _mockRepository = Substitute.For<IUserCredentialsReadRepository>();
+        _mockEventStore = Substitute.For<IEventStore>();
         _mockLogger = Substitute.For<ILogger<GetUserCredentialsByUserIdHandler>>();
-        _handler = new GetUserCredentialsByUserIdHandler(_mockRepository, _mockLogger);
+        _handler = new GetUserCredentialsByUserIdHandler(_mockEventStore, _mockLogger);
     }
 
     [Fact]
     public async Task Should_Return_Credentials_When_Found()
     {
         var userId = Guid.NewGuid();
-        var expected = new UserCredentials(Guid.NewGuid(), userId, "john_doe", "$2a$11$hashedpassword");
+        var credentialsId = Guid.NewGuid();
+        var events = new List<IDomainEvent>
+        {
+            new CredentialsRegisteredEvent(Guid.NewGuid(), DateTimeOffset.UtcNow,
+                credentialsId, userId, "john_doe", "$2a$11$hashedpassword")
+        };
 
-        _mockRepository.GetByUserIdAsync(userId, token: Arg.Any<CancellationToken>())
-            .Returns(expected);
-
-        var query = new GetUserCredentialsByUserId { UserId = userId };
-
-        var result = await _handler.Handle(query);
-
-        result.Should().NotBeNull();
-        result.Should().BeEquivalentTo(expected);
-        await _mockRepository.Received(1).GetByUserIdAsync(userId, token: Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task Should_Return_Empty_Credentials_When_Not_Found()
-    {
-        var userId = Guid.NewGuid();
-
-        _mockRepository.GetByUserIdAsync(userId, token: Arg.Any<CancellationToken>())
-            .Returns(new UserCredentials());
+        _mockEventStore.Load(userId, 0, Arg.Any<CancellationToken>())
+            .Returns(events);
 
         var query = new GetUserCredentialsByUserId { UserId = userId };
 
         var result = await _handler.Handle(query);
 
         result.Should().NotBeNull();
-        result.Should().BeEquivalentTo(new UserCredentials());
+        result.Id.Should().Be(credentialsId);
+        result.UserId.Should().Be(userId);
+        result.Email.Should().Be("john_doe");
+        await _mockEventStore.Received(1).Load(userId, 0, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -61,7 +53,7 @@ public class GetUserCredentialsByUserIdHandlerTests
     {
         var userId = Guid.NewGuid();
 
-        _mockRepository.GetByUserIdAsync(userId, token: Arg.Any<CancellationToken>())
+        _mockEventStore.Load(userId, 0, Arg.Any<CancellationToken>())
             .Throws(new Exception("Database connection failed"));
 
         var query = new GetUserCredentialsByUserId { UserId = userId };
@@ -73,18 +65,17 @@ public class GetUserCredentialsByUserIdHandlerTests
     }
 
     [Fact]
-    public async Task Should_Pass_CancellationToken_To_Repository()
+    public async Task Should_Pass_CancellationToken_To_EventStore()
     {
         var userId = Guid.NewGuid();
         var cancellationToken = new CancellationToken();
-
-        _mockRepository.GetByUserIdAsync(userId, token: cancellationToken)
-            .Returns(new UserCredentials());
+        _mockEventStore.Load(userId, 0, cancellationToken)
+            .Returns(new List<IDomainEvent>());
 
         var query = new GetUserCredentialsByUserId { UserId = userId };
 
         await _handler.Handle(query, cancellationToken);
 
-        await _mockRepository.Received(1).GetByUserIdAsync(userId, token: cancellationToken);
+        await _mockEventStore.Received(1).Load(userId, 0, cancellationToken);
     }
 }
