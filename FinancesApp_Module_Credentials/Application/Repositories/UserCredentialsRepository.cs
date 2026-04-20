@@ -64,6 +64,76 @@ public class UserCredentialsRepository : IUserCredentialsRepository
 
     }
 
+    public async Task<bool> SaveUserCredentialTotpAsync(UserCredentialsTotp totpCredentials,
+                                                        SqlConnection? connection = null,
+                                                        CancellationToken token = default)
+    {
+        const string InsertCommandText = @"INSERT INTO [FinanceApp].[dbo].[UserCredentialsTotp]
+                                            (Id, UserId, SecurityCode, CreatedAt, InvalidAt, Active)
+                                            VALUES
+                                            (@Id, @UserId, @SecurityCode, @CreatedAt, @InvalidAt, @Active)";
+
+        var rowsAffected = await _commandFactory.ExecuteAsync(
+            commandText: InsertCommandText,
+            connection: connection,
+            options: new CreateSqlCommandOptions
+            {
+                Parameters =
+                [
+                    new SqlParameter("@Id",           totpCredentials.Id),
+                    new SqlParameter("@UserId",       totpCredentials.UserId),
+                    new SqlParameter("@SecurityCode", totpCredentials.SecurityCode),
+                    new SqlParameter("@CreatedAt",    totpCredentials.CreatedAt),
+                    new SqlParameter("@InvalidAt",    totpCredentials.InvalidAt),
+                    new SqlParameter("@Active",       totpCredentials.Active)
+                ]
+            },
+            operation: async command => await command.ExecuteNonQueryAsync(token),
+            token);
+
+        return rowsAffected > 0;
+    }
+
+    public async Task<bool> InvalidateUserCredentialTotpByIdAsync(Guid totpId,
+                                                                   SqlConnection? connection = null,
+                                                                   CancellationToken token = default)
+    {
+        const string UpdateCommandText = @"UPDATE [FinanceApp].[dbo].[UserCredentialsTotp]
+                                           SET Active = 0
+                                           WHERE Id = @Id AND Active = 1";
+
+        var rowsAffected = await _commandFactory.ExecuteAsync(
+            commandText: UpdateCommandText,
+            options: new CreateSqlCommandOptions
+            {
+                Parameters = [new("@Id", System.Data.SqlDbType.UniqueIdentifier) { Value = totpId }]
+            },
+            operation: async command => await command.ExecuteNonQueryAsync(token),
+            token);
+
+        return rowsAffected > 0;
+    }
+
+    public async Task<bool> InvalidateUserCredentialTotpByUserIdAsync(Guid userId,
+                                                                       SqlConnection? connection = null,
+                                                                       CancellationToken token = default)
+    {
+        const string UpdateCommandText = @"UPDATE [FinanceApp].[dbo].[UserCredentialsTotp]
+                                           SET Active = 0
+                                           WHERE UserId = @UserId AND Active = 1";
+
+        var rowsAffected = await _commandFactory.ExecuteAsync(
+            commandText: UpdateCommandText,
+            options: new CreateSqlCommandOptions
+            {
+                Parameters = [new("@UserId", System.Data.SqlDbType.UniqueIdentifier) { Value = userId }]
+            },
+            operation: async command => await command.ExecuteNonQueryAsync(token),
+            token);
+
+        return rowsAffected > 0;
+    }
+
     public async Task UpdateUserSetCredentialsDate(Guid insertedId,
                                                    SqlConnection? connection = null,
                                                    CancellationToken token = default)

@@ -10,10 +10,23 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove=".claude\**" />
+    <Content Remove=".claude\**" />
+    <EmbeddedResource Remove=".claude\**" />
+    <None Remove=".claude\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="CLAUDE.md" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.1" />
     <PackageReference Include="AspNetCore.HealthChecks.SqlServer" Version="9.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.24" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
+    <PackageReference Include="Otp.NET" Version="1.4.1" />
+    <PackageReference Include="QRCoder" Version="1.8.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 

@@ -16,7 +16,7 @@ public class OutboxProcessor(ICommandFactory commandFactory,
 {
     private const int BatchSize = 50;
     private const int MaxRetries = 5;
-    private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(2);
 
     private static readonly Counter EventsProcessed = Metrics
         .CreateCounter("outbox_events_processed_total", "Total number of [FinanceApp].[dbo].[Outbox] events successfully dispatched");

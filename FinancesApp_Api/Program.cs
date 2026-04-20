@@ -7,6 +7,7 @@ using FinancesApp_CQRS;
 using FinancesApp_CQRS.Dispatchers;
 using FinancesApp_CQRS.EventStore;
 using FinancesApp_CQRS.Interfaces;
+using FinancesApp_CQRS.Outbox;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
@@ -59,6 +60,10 @@ builder.Services.AddSingleton<ICommandDispatcher, CommandDispatcher>();
 builder.Services.AddSingleton<IEventStore, EventStore>();
 builder.Services.AddSingleton<IEventDispatcher, EventDispatcher>();
 
+builder.Services.AddHostedService<OutboxProcessor>();
+
+builder.Services.AddRateLimiting();
+
 builder.Services.AddAccountModule();
 builder.Services.AddUserModule();
 builder.Services.AddCredentialsModule();
@@ -103,6 +108,8 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseRateLimiter();
 
 app.MapControllers();
 

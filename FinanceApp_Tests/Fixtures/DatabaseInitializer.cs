@@ -23,7 +23,7 @@ public class DatabaseInitializer
         if (connection.State != System.Data.ConnectionState.Open)
             await connection.OpenAsync();
 
-        string script = File.ReadAllText("C:\\Projetos\\PersonalFinance\\Api\\FinanceApp_Tests\\FinanceAppDb_V11.sql");
+        string script = File.ReadAllText("C:\\Projetos\\PersonalFinance\\Api\\FinanceApp_Tests\\FinanceAppDb_V13.sql");
         ExecuteScript(connection, script);
     }
     protected virtual void ExecuteScript(SqlConnection connection, string script)

@@ -9,4 +9,6 @@ public static class CredentialsEndpoints
     public const string UpdateCredentials = $"{Base}/{{userId}}";
     public const string DeleteCredentials = $"{Base}/{{userId}}";
     public const string Login = $"{Base}/login";
+    public const string VerifyTwoFactor = $"{Base}/verify-2fa";
+    public const string RebuildProjection = $"{Base}/rebuild-projection/{{userId}}";
 }
