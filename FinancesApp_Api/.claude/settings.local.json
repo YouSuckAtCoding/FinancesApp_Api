@@ -5,7 +5,8 @@
       "Bash(powershell:*)",
       "Bash(dotnet build:*)",
       "Bash(dotnet test:*)",
-      "Bash(iconv -f UTF-16LE -t UTF-8 \"C:\\\\Projetos\\\\PersonalFinance\\\\Api\\\\FinanceApp_Tests\\\\FinanceAppDb_V12.sql\")"
+      "Bash(iconv -f UTF-16LE -t UTF-8 \"C:\\\\Projetos\\\\PersonalFinance\\\\Api\\\\FinanceApp_Tests\\\\FinanceAppDb_V12.sql\")",
+      "Bash(dotnet add *)"
     ]
   }
 }

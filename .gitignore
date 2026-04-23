@@ -11,4 +11,4 @@ Dockerfile
 *.claude/
 
 */FinanceApp_Tests/FinanceAppDb
-
+*/grafana

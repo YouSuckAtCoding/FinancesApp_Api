@@ -14,6 +14,12 @@ dotnet run --project FinancesApp_Api.csproj
 # Run all tests
 dotnet test ../FinanceApp_Tests/FinancesApp_Tests.csproj
 
+# Run only unit tests (no Docker)
+dotnet test ../FinanceApp_Tests/FinancesApp_Tests.csproj --filter "FullyQualifiedName~FinancesApp_Tests.Unit"
+
+# Run only integration tests (requires Docker)
+dotnet test ../FinanceApp_Tests/FinancesApp_Tests.csproj --filter "FullyQualifiedName~FinancesApp_Tests.Integration"
+
 # Run a single test class
 dotnet test ../FinanceApp_Tests/FinancesApp_Tests.csproj --filter "FullyQualifiedName~ApplyDeltaHandlerTests"
 
@@ -39,7 +45,7 @@ docker-compose up --build
 | `FinancesApp_Module_Credentials` | Credentials domain module |
 | `FinanceAppDatabase` | Raw ADO.NET data access — `IDbConnectionFactory`, `ICommandFactory`, `SqlDataReaderExtensions` |
 | `Identity.Api` | Separate microservice for JWT token generation |
-| `FinanceApp_Tests` | Integration tests (xUnit, Moq, NSubstitute, FluentAssertions, Testcontainers) |
+| `FinanceApp_Tests` | Tests (xUnit, Moq, NSubstitute, FluentAssertions, Testcontainers) — split into `Unit/` and `Integration/` |
 | `FinancesAppDb` | SQL Server Database Project (.sqlproj) |
 
 ### CQRS Flow
@@ -68,7 +74,22 @@ All database access uses raw SQL via `IDbConnectionFactory` and `ICommandFactory
 
 ## Testing
 
-Integration tests run against a real SQL Server via **Testcontainers**. Test fixtures (`SqlFixture`, `DatabaseInitializer`) set up the DB from SQL scripts in `FinanceApp_Tests/` (latest is `FinanceAppDb_V*.sql`). Remove any `USE` statements from scripts before running tests.
+Tests are split into two folders inside `FinanceApp_Tests/`:
+
+- **`Unit/`** — in-memory tests using mocks (NSubstitute/Moq). No Docker required. Namespace: `FinancesApp_Tests.Unit.*`
+- **`Integration/`** — tests requiring a real SQL Server via **Testcontainers** (`SqlFixture`). Namespace: `FinancesApp_Tests.Integration.*`
+
+```bash
+# Run only unit tests (no Docker needed)
+dotnet test ../FinanceApp_Tests/FinancesApp_Tests.csproj --filter "FullyQualifiedName~FinancesApp_Tests.Unit"
+
+# Run only integration tests (requires Docker)
+dotnet test ../FinanceApp_Tests/FinancesApp_Tests.csproj --filter "FullyQualifiedName~FinancesApp_Tests.Integration"
+```
+
+**When adding new tests:** place in `Unit/` if it uses mocks only; place in `Integration/` if it uses `SqlFixture` or any real infrastructure. Always use the matching namespace prefix.
+
+Test fixtures (`SqlFixture`, `DatabaseInitializer`) set up the DB from SQL scripts in `FinanceApp_Tests/` (latest is `FinanceAppDb_V*.sql`). Remove any `USE` statements from scripts before running tests.
 
 ## Key Conventions
 

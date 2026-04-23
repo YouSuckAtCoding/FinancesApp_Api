@@ -16,7 +16,7 @@ public class OutboxProcessor(ICommandFactory commandFactory,
 {
     private const int BatchSize = 50;
     private const int MaxRetries = 5;
-    private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(0.5);
 
     private static readonly Counter EventsProcessed = Metrics
         .CreateCounter("outbox_events_processed_total", "Total number of [FinanceApp].[dbo].[Outbox] events successfully dispatched");
@@ -28,7 +28,7 @@ public class OutboxProcessor(ICommandFactory commandFactory,
         .CreateHistogram("outbox_batch_duration_seconds", "[FinanceApp].[dbo].[Outbox] batch processing time",
             new HistogramConfiguration
             {
-                Buckets = Histogram.LinearBuckets(start: 0.1, width: 0.1, count: 10)
+                Buckets = Histogram.ExponentialBuckets(start: 0.005, factor: 2, count: 10)
             });
 
     protected override async Task ExecuteAsync(CancellationToken token)

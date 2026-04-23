@@ -115,8 +115,8 @@ public class UserCredentialsRepository : IUserCredentialsRepository
     }
 
     public async Task<bool> InvalidateUserCredentialTotpByUserIdAsync(Guid userId,
-                                                                       SqlConnection? connection = null,
-                                                                       CancellationToken token = default)
+                                                                      SqlConnection? connection = null,
+                                                                      CancellationToken token = default)
     {
         const string UpdateCommandText = @"UPDATE [FinanceApp].[dbo].[UserCredentialsTotp]
                                            SET Active = 0

@@ -1,6 +1,7 @@
 ﻿using FinancesApp_Api.Contracts.Requests.AccountRequests;
 using FinancesApp_Api.Endpoints;
 using FinancesApp_Api.Mapper;
+using FinancesApp_Api.StartUp;
 using FinancesApp_CQRS.Interfaces;
 using FinancesApp_CQRS.Queries;
 using FinancesApp_Module_Account.Application.Commands;
@@ -8,6 +9,7 @@ using FinancesApp_Module_Account.Application.Queries;
 using FinancesApp_Module_Account.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace FinancesApp_Api.Controllers;
 
@@ -76,8 +78,9 @@ public class AccountController(IQueryHandler<GetAccounts, IReadOnlyList<Account>
         return Ok("Account created successfully");
     }
 
+    [EnableRateLimiting(RateLimitingInjections.DeltaPolicy)]
     [HttpPost(AccountEndpoints.ApplyDeltaEndpoint)]
-    public async Task<IActionResult> ApplyDelta([FromBody] ApplyDeltaRequest request, 
+    public async Task<IActionResult> ApplyDelta([FromBody] ApplyDeltaRequest request,
                                                 CancellationToken token = default)
     {
 

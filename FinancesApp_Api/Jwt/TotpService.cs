@@ -25,7 +25,7 @@ public class TotpService
     {
         var secretBytes = Base32Encoding.ToBytes(base32Secret);
         var totp = new Totp(secretBytes, step: 30, totpSize: 6);
-        return totp.VerifyTotp(totpCode, out _, new VerificationWindow(previous: 1, future: 1));
+        return totp.VerifyTotp(totpCode, out _, VerificationWindow.RfcSpecifiedNetworkDelay);
     }
 }
 

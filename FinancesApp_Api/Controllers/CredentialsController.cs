@@ -111,7 +111,7 @@ public class UserCredentialsController(IQueryHandler<GetUserCredentialsByUserId,
     }
     
     [Authorize]
-    [EnableRateLimiting(RateLimitingInjections.AuthPolicy)]
+    [EnableRateLimiting(RateLimitingInjections.VerifyTotpPolicy)]
     [HttpPost(CredentialsEndpoints.VerifyTwoFactor)]
     public async Task<IActionResult> VerifyTwoFactor([FromBody] VerifyTwoFactorRequest request,
                                                      CancellationToken token = default)

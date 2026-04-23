@@ -10,7 +10,8 @@ namespace FinancesApp_Api.Jwt;
 public class TotpValidator(TotpService totpService,
                            IQueryHandler<GetActiveUserTotp, UserCredentialsTotp?> getActiveTotpHandler,
                            ICommandHandler<InvalidateTotpCredential, bool> invalidateTotpHandler,
-                           IConfiguration configuration)
+                           IConfiguration configuration,
+                           ILogger<TotpValidator> logger)
 {
     public async Task<TotpValidationResult> Validate(VerifyTwoFactorRequest request,
                                                       ClaimsPrincipal user,
@@ -46,7 +47,14 @@ public class TotpValidator(TotpService totpService,
             return new TotpValidationResult(TotpValidationStatus.TotpExpired);
         }
 
-        if (!totpService.VerifyCode(activeTotp.SecurityCode, request.TotpCode))
+        var codeValid = totpService.VerifyCode(activeTotp.SecurityCode, request.TotpCode);
+        logger.LogInformation(
+            "TOTP verify — TotpId: {TotpId}, UserId: {UserId}, SecurityCode: {SecurityCode}, " +
+            "CreatedAt: {CreatedAt}, InvalidAt: {InvalidAt}, ServerUtcNow: {UtcNow}, Result: {Result}",
+            activeTotp.Id, userGuid, activeTotp.SecurityCode,
+            activeTotp.CreatedAt, activeTotp.InvalidAt, DateTimeOffset.UtcNow, codeValid);
+
+        if (!codeValid)
             return new TotpValidationResult(TotpValidationStatus.InvalidCode);
 
         return new TotpValidationResult(TotpValidationStatus.Valid, userGuid, activeTotp.Id);

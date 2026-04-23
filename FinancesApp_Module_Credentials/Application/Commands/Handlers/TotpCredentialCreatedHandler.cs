@@ -25,8 +25,8 @@ public class TotpCredentialCreatedHandler(IEventStore eventStore,
         using (TotpCredentialsCreatedDuration.NewTimer())
         {
             _logger.LogInformation(
-            "Creating TOTP credentials - UserID: {UserId}, CreatedAt: {CreatedAt}",
-            command.TotpCredentials.UserId, command.TotpCredentials.CreatedAt);
+            "Creating TOTP credentials - UserID: {UserId}, TotpId: {TotpId}, SecurityCode: {SecurityCode}, CreatedAt: {CreatedAt}",
+            command.TotpCredentials.UserId, command.TotpCredentials.Id, command.TotpCredentials.SecurityCode, command.TotpCredentials.CreatedAt);
 
             try
             {
