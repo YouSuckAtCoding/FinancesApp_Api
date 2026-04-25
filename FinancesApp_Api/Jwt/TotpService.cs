@@ -1,9 +1,10 @@
+using Microsoft.Extensions.Logging;
 using OtpNet;
 using QRCoder;
 
 namespace FinancesApp_Api.Jwt;
 
-public class TotpService
+public class TotpService(ILogger<TotpService> logger)
 {
     public TotpGenerationResult GenerateSecret(string userEmail)
     {
@@ -24,8 +25,12 @@ public class TotpService
     public bool VerifyCode(string base32Secret, string totpCode)
     {
         var secretBytes = Base32Encoding.ToBytes(base32Secret);
-        var totp = new Totp(secretBytes, step: 30, totpSize: 6);
-        return totp.VerifyTotp(totpCode, out _, VerificationWindow.RfcSpecifiedNetworkDelay);
+        var totp = new Totp(secretBytes, totpSize: 6);
+        var expected = totp.ComputeTotp();
+        var result = totp.VerifyTotp(totpCode, out var step, new VerificationWindow(previous: 2, future: 1));
+        logger.LogInformation("[TotpService] Expected={Expected} | Got={Got} | StepMatched={Step} | ServerUtc={ServerUtc} | Result={Result}",
+            expected, totpCode, step, DateTime.UtcNow, result);
+        return result;
     }
 }
 
