@@ -9,6 +9,6 @@ Dockerfile
 /CLAUDE.md
 *.claude
 *.claude/
-
+/logs
 */FinanceApp_Tests/FinanceAppDb
 */grafana

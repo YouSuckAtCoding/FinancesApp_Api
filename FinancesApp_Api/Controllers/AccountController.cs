@@ -19,7 +19,7 @@ public class AccountController(IQueryHandler<GetAccounts, IReadOnlyList<Account>
                                IQueryHandler<GetAccountById, Account> getAccountByIdHandler,
                                IQueryHandler<GetActiveAccounts, IReadOnlyList<Account>> getActiveAccountsHandler,
                                ICommandHandler<CreateAccount, bool> createAccountHandler,
-                               ICommandHandler<ApplyDelta, bool> applyDeltaHandler) : ControllerBase
+                               ICommandHandler<ApplyDelta, ApplyDeltaResult> applyDeltaHandler) : ControllerBase
 {
 
 
@@ -105,10 +105,11 @@ public class AccountController(IQueryHandler<GetAccounts, IReadOnlyList<Account>
             OperationType = (OperationType)request.OperationType,
             RequestedAt = MappingUtils.ParseToDateTimeOffset(request.RequestedAt) ?? DateTimeOffset.UtcNow
         };
+
         var result = await applyDeltaHandler.Handle(command, token);
-        
-        if (!result)
-            return BadRequest("Failed to apply delta");
+
+        if (!result.Success)
+            return BadRequest(result.ErrorMessage);
 
         return Ok("Delta applied successfully");
     }

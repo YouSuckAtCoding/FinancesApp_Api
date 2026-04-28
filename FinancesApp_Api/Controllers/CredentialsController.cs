@@ -86,7 +86,7 @@ public class UserCredentialsController(IQueryHandler<GetUserCredentialsByUserId,
 
         var credentials = await getByLoginHandler.Handle(query, token);
 
-        if (credentials is null || !credentials.VerifyPassword(request.PlainPassword))
+        if (credentials is null || credentials.Id == Guid.Empty)
             return Unauthorized();
 
         var existingTotp = await getActiveTotpHandler.Handle(

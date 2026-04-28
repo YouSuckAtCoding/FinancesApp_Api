@@ -45,7 +45,7 @@ public class JwtService
     {
         using HttpClient client = new();
         var response = await client.PostAsJsonAsync(TokenEndpoint, request, token);
-        response.EnsureSuccessStatusCode();
+        response.EnsureSuccessStatusCode(); 
         return await response.Content.ReadAsStringAsync(token);
     }
 }

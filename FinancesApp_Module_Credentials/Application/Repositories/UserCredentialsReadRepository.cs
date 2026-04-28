@@ -19,7 +19,7 @@ public class UserCredentialsReadRepository : IUserCredentialsReadRepository
                                                         SqlConnection? connection = null, 
                                                         CancellationToken token = default)
     {
-        const string SelectCommandText = @"SELECT Id, UserId, Login, PasswordHash
+        const string SelectCommandText = @"SELECT Id, UserId, Login
                                            FROM [FinanceApp].[dbo].[UserCredentials]
                                            WHERE UserId = @UserId";
 
@@ -40,7 +40,7 @@ public class UserCredentialsReadRepository : IUserCredentialsReadRepository
                 return new UserCredentials(reader.GetGuid(reader.GetOrdinal("Id")),
                                           reader.GetGuid(reader.GetOrdinal("UserId")),
                                           reader.GetString(reader.GetOrdinal("Login")),
-                                          reader.GetString(reader.GetOrdinal("PasswordHash")));
+                                          string.Empty);
             },
             token);
 
@@ -51,7 +51,7 @@ public class UserCredentialsReadRepository : IUserCredentialsReadRepository
                                                        SqlConnection? connection = null,
                                                        CancellationToken token = default)
     {
-        const string SelectCommandText = @"SELECT Id, UserId, Login, PasswordHash
+        const string SelectCommandText = @"SELECT Id, UserId, Login
                                            FROM [FinanceApp].[dbo].[UserCredentials]
                                            WHERE Login = @Login";
 
@@ -72,7 +72,7 @@ public class UserCredentialsReadRepository : IUserCredentialsReadRepository
                 return new UserCredentials(reader.GetGuid(reader.GetOrdinal("Id")),
                                            reader.GetGuid(reader.GetOrdinal("UserId")),
                                            reader.GetString(reader.GetOrdinal("Login")),
-                                           reader.GetString(reader.GetOrdinal("PasswordHash")));
+                                           string.Empty);
             },
             token);
 

@@ -1,15 +1,13 @@
 using FinancesApp_CQRS.Interfaces;
+using FinancesApp_Module_Credentials.Application.Repositories;
 using FinancesApp_Module_Credentials.Domain;
 using Microsoft.Extensions.Logging;
 using Prometheus;
 
 namespace FinancesApp_Module_Credentials.Application.Queries.Handlers;
-public class GetUserCredentialsByUserIdHandler(IEventStore eventStore,
-                                           ILogger<GetUserCredentialsByUserIdHandler> logger) : IQueryHandler<GetUserCredentialsByUserId, UserCredentials>
+public class GetUserCredentialsByUserIdHandler(IUserCredentialsReadRepository readRepository,
+                                               ILogger<GetUserCredentialsByUserIdHandler> logger) : IQueryHandler<GetUserCredentialsByUserId, UserCredentials>
 {
-    private readonly IEventStore _eventStore = eventStore;
-    private readonly ILogger<GetUserCredentialsByUserIdHandler> _logger = logger;
-
     private static readonly Counter GetCredentialsByUserIdCounter = Metrics
         .CreateCounter("credentials_total_GetByUserId", "Total number of credentials retrieved by user id.");
 
@@ -26,11 +24,7 @@ public class GetUserCredentialsByUserIdHandler(IEventStore eventStore,
         {
             try
             {
-                var credentials = new UserCredentials();
-
-                var events = await _eventStore.Load(query.UserId, token: cancellationToken);
-
-                credentials.RebuildFromEvents(events);
+                var credentials = await readRepository.GetByUserIdAsync(query.UserId, token: cancellationToken);
 
                 GetCredentialsByUserIdCounter.Inc();
 
@@ -38,7 +32,7 @@ public class GetUserCredentialsByUserIdHandler(IEventStore eventStore,
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching credentials for UserID {UserId}", query.UserId);
+                logger.LogError(ex, "Error fetching credentials for UserID {UserId}", query.UserId);
                 return new UserCredentials();
             }
         }

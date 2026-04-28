@@ -237,7 +237,7 @@ public class RebuildCredentialsProjectionIntegrationTests : IClassFixture<SqlFix
         dispatcher.Register<CredentialsPasswordChangedEvent>(credentialsProjection);
         dispatcher.Register<CredentialsDeletedEvent>(credentialsProjection);
 
-        var totpProjection = new TotpProjection(credentialsRepo, checkpoint);
+        var totpProjection = new TotpProjection(credentialsRepo, checkpoint, NullLogger<TotpProjection>.Instance);
         dispatcher.Register<TotpCredentialCreatedEvent>(totpProjection);
         dispatcher.Register<TotpCredentialInvalidatedEvent>(totpProjection);
 

@@ -1,9 +1,9 @@
-using FinancesApp_CQRS.Interfaces;
 using FinancesApp_Module_Credentials.Application.Queries;
 using FinancesApp_Module_Credentials.Application.Queries.Handlers;
+using FinancesApp_Module_Credentials.Application.Repositories;
 using FinancesApp_Module_Credentials.Domain;
-using FinancesApp_Module_Credentials.Domain.Events;
 using FluentAssertions;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -12,15 +12,15 @@ namespace FinancesApp_Tests.Unit.UserCredentialsTests.Handlers;
 
 public class GetUserCredentialsByUserIdHandlerTests
 {
-    private readonly IEventStore _mockEventStore;
+    private readonly IUserCredentialsReadRepository _mockReadRepository;
     private readonly ILogger<GetUserCredentialsByUserIdHandler> _mockLogger;
     private readonly GetUserCredentialsByUserIdHandler _handler;
 
     public GetUserCredentialsByUserIdHandlerTests()
     {
-        _mockEventStore = Substitute.For<IEventStore>();
+        _mockReadRepository = Substitute.For<IUserCredentialsReadRepository>();
         _mockLogger = Substitute.For<ILogger<GetUserCredentialsByUserIdHandler>>();
-        _handler = new GetUserCredentialsByUserIdHandler(_mockEventStore, _mockLogger);
+        _handler = new GetUserCredentialsByUserIdHandler(_mockReadRepository, _mockLogger);
     }
 
     [Fact]
@@ -28,14 +28,10 @@ public class GetUserCredentialsByUserIdHandlerTests
     {
         var userId = Guid.NewGuid();
         var credentialsId = Guid.NewGuid();
-        var events = new List<IDomainEvent>
-        {
-            new CredentialsRegisteredEvent(Guid.NewGuid(), DateTimeOffset.UtcNow,
-                credentialsId, userId, "john_doe", "$2a$11$hashedpassword")
-        };
+        var credentials = new UserCredentials(credentialsId, userId, "john_doe", "$2a$11$hashedpassword");
 
-        _mockEventStore.Load(userId, 0, Arg.Any<CancellationToken>())
-            .Returns(events);
+        _mockReadRepository.GetByUserIdAsync(userId, Arg.Any<SqlConnection?>(), Arg.Any<CancellationToken>())
+            .Returns(credentials);
 
         var query = new GetUserCredentialsByUserId { UserId = userId };
 
@@ -45,7 +41,7 @@ public class GetUserCredentialsByUserIdHandlerTests
         result.Id.Should().Be(credentialsId);
         result.UserId.Should().Be(userId);
         result.Email.Should().Be("john_doe");
-        await _mockEventStore.Received(1).Load(userId, 0, Arg.Any<CancellationToken>());
+        await _mockReadRepository.Received(1).GetByUserIdAsync(userId, Arg.Any<SqlConnection?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -53,7 +49,7 @@ public class GetUserCredentialsByUserIdHandlerTests
     {
         var userId = Guid.NewGuid();
 
-        _mockEventStore.Load(userId, 0, Arg.Any<CancellationToken>())
+        _mockReadRepository.GetByUserIdAsync(userId, Arg.Any<SqlConnection?>(), Arg.Any<CancellationToken>())
             .Throws(new Exception("Database connection failed"));
 
         var query = new GetUserCredentialsByUserId { UserId = userId };
@@ -65,17 +61,17 @@ public class GetUserCredentialsByUserIdHandlerTests
     }
 
     [Fact]
-    public async Task Should_Pass_CancellationToken_To_EventStore()
+    public async Task Should_Pass_CancellationToken_To_Repository()
     {
         var userId = Guid.NewGuid();
         var cancellationToken = new CancellationToken();
-        _mockEventStore.Load(userId, 0, cancellationToken)
-            .Returns(new List<IDomainEvent>());
+        _mockReadRepository.GetByUserIdAsync(userId, Arg.Any<SqlConnection?>(), cancellationToken)
+            .Returns(new UserCredentials());
 
         var query = new GetUserCredentialsByUserId { UserId = userId };
 
         await _handler.Handle(query, cancellationToken);
 
-        await _mockEventStore.Received(1).Load(userId, 0, cancellationToken);
+        await _mockReadRepository.Received(1).GetByUserIdAsync(userId, Arg.Any<SqlConnection?>(), cancellationToken);
     }
 }

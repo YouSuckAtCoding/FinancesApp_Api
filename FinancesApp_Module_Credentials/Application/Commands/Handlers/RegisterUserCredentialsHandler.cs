@@ -32,7 +32,7 @@ public class RegisterUserCredentialsHandler(IEventStore eventStore,
 
             try
             {
-                await _eventStore.Append(credentials.UserId, credentials.GetUncommittedEvents(), credentials.CurrentVersion, cancellationToken);
+                await _eventStore.Append(credentials.Id, credentials.GetUncommittedEvents(), credentials.CurrentVersion, cancellationToken);
 
                 CredentialsCreated.Inc();
 

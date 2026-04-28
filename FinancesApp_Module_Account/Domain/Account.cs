@@ -98,24 +98,38 @@ public sealed class Account : AggregateRoot
         ClosedAt = closedAt;
     }
 
-    public void ApplyDelta(Money delta, 
+    public void ApplyDelta(decimal amount,
+                           string currency,
                            OperationType opType = OperationType.MoneyTransaction,
                            TransactionType transactionType = TransactionType.Withdraw)
     {
-        EnsureActive();
-        EnsureCurrency(delta.Currency);
+        var error = ValidateApplyDelta(amount, currency, opType, transactionType);
+        if (error is not null)
+        {
+            Raise(new ApplyDeltaErrorEvent(Guid.NewGuid(),
+                                           DateTimeOffset.UtcNow,
+                                           Id,
+                                           UserId,
+                                           error,
+                                           amount,
+                                           currency,
+                                           opType,
+                                           transactionType));
+            return;
+        }
+
+        var delta = new Money(amount, currency);
 
         if (Type == AccountType.CreditCard || opType == OperationType.CreditPurchase)
         {
             UpdateCredit(delta, opType);
             return;
         }
-        
+
         if (transactionType == TransactionType.Withdraw)
             Raise(new WithdrawEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, Id, UserId, delta, DateTimeOffset.UtcNow));
         else
             Raise(new DepositEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, Id, UserId, delta, DateTimeOffset.UtcNow));
-
     }
 
     public void PayCreditCardDebt(Money amount)
@@ -227,12 +241,11 @@ public sealed class Account : AggregateRoot
 
             case WithdrawEvent e:
 
-                var newBalance = Balance.Subtract(e.Amount);
-                
-                if (Type == AccountType.Cash && newBalance.Amount < 0)
-                    throw new InvalidOperationException("Insufficient funds in cash account.");
+                Balance = Balance.Subtract(e.Amount);
+                break;
 
-                Balance = newBalance;
+            case ApplyDeltaErrorEvent:
+
                 break;
 
             case CalculatedCreditLimitEvent e:
@@ -302,9 +315,6 @@ public sealed class Account : AggregateRoot
             newDebt = CurrentDebt.Subtract(delta.Amount < 0 ? delta.Negate() : delta);
         else
             newDebt = CurrentDebt.Add(delta.Amount < 0 ? delta.Negate() : delta);
-        
-        if (newDebt.Amount > CreditLimit.Amount)
-            throw new InvalidOperationException("Credit limit exceeded.");
 
         var debt = newDebt.Amount < 0 ? new Money(0m, delta.Currency) : newDebt;
         
@@ -350,5 +360,55 @@ public sealed class Account : AggregateRoot
         if (balance.Amount < 0 && Type != AccountType.CreditCard)
             throw new InvalidOperationException("Initial balance cannot be negative for non credit-card accounts.");
         return true;
+    }
+
+    private string? ValidateApplyDelta(decimal amount, string currency, OperationType opType, TransactionType transactionType)
+    {
+        if (Status == AccountStatus.Closed)
+            return "Account is closed.";
+
+        if (string.IsNullOrWhiteSpace(currency))
+            return "Currency is required.";
+
+        if (currency.Trim().Length != 3)
+            return "Currency must be a 3-letter ISO code.";
+
+        var accountCurrency = Type switch
+        {
+            AccountType.Cash or AccountType.Checking => Balance.Currency,
+            AccountType.CreditCard => CreditLimit.Currency,
+            _ => null
+        };
+
+        if (accountCurrency is null)
+            return "Unknown account type.";
+
+        if (!string.Equals(accountCurrency, currency.Trim(), StringComparison.OrdinalIgnoreCase))
+            return "Currency mismatch.";
+
+        if (Type == AccountType.CreditCard && opType != OperationType.CreditPurchase && opType != OperationType.Payment)
+            return "Credit card accounts only support credit card operations.";
+
+        var abs = Math.Abs(amount);
+
+        if (Type == AccountType.CreditCard || opType == OperationType.CreditPurchase)
+        {
+            var newDebt = opType == OperationType.Payment
+                ? CurrentDebt.Amount - abs
+                : CurrentDebt.Amount + abs;
+
+            if (newDebt > CreditLimit.Amount)
+                return "Credit limit exceeded.";
+        }
+
+        if (Type == AccountType.Cash
+            && opType != OperationType.CreditPurchase
+            && transactionType == TransactionType.Withdraw
+            && Balance.Amount - abs < 0)
+        {
+            return "Insufficient funds in cash account.";
+        }
+
+        return null;
     }
 }

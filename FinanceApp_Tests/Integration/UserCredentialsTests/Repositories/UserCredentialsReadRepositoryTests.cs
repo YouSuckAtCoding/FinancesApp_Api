@@ -176,7 +176,6 @@ public class UserCredentialsReadRepositoryTests : IClassFixture<SqlFixture>
             retrieved.Id.Should().Be(insertedId);
             retrieved.UserId.Should().Be(insertedUserId);
             retrieved.Email.Should().Be((string)parameters["@Login"]);
-            retrieved.Password.Should().Be((string)parameters["@PasswordHash"]);
         });
     }
 
@@ -218,7 +217,7 @@ public class UserCredentialsReadRepositoryTests : IClassFixture<SqlFixture>
             retrieved.Id.Should().Be(insertedId);
             retrieved.UserId.Should().Be(insertedUserId);
             retrieved.Email.Should().Be(login);
-            retrieved.Password.Should().Be((string)parameters["@PasswordHash"]);
+            retrieved.Password.Should().BeEmpty();
         });
     }
 

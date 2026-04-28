@@ -27,7 +27,7 @@ public class GetUserCredentialsByLoginHandlerTests
     {
         // Arrange
         var login = "john_doe";
-        var expected = new UserCredentials(Guid.NewGuid(), Guid.NewGuid(), login, "$2a$11$hashedpassword");
+        var expected = new UserCredentials(Guid.NewGuid(), Guid.NewGuid(), login, string.Empty);
 
         _mockRepository.GetByLoginAsync(login, token: Arg.Any<CancellationToken>())
             .Returns(expected);
@@ -39,7 +39,10 @@ public class GetUserCredentialsByLoginHandlerTests
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().BeEquivalentTo(expected);
+        result.Id.Should().Be(expected.Id);
+        result.UserId.Should().Be(expected.UserId);
+        result.Email.Should().Be(login);
+        result.Password.Should().BeEmpty();
         await _mockRepository.Received(1).GetByLoginAsync(login, token: Arg.Any<CancellationToken>());
     }
 

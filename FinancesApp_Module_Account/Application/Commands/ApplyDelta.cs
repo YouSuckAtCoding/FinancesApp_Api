@@ -2,7 +2,7 @@
 using FinancesApp_Module_Account.Domain;
 
 namespace FinancesApp_Module_Account.Application.Commands;
-public class ApplyDelta : ICommand<bool>
+public class ApplyDelta : ICommand<ApplyDeltaResult>
 {
     public required Account Account { get; set; }
     public required OperationType OperationType { get; set; }

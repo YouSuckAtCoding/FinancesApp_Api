@@ -1,8 +1,9 @@
-﻿using FinancesApp_CQRS.EventStore;
+using FinancesApp_CQRS.EventStore;
 using FinancesApp_CQRS.Interfaces;
 using FinancesApp_Module_Account.Application.Commands;
 using FinancesApp_Module_Account.Application.Commands.Handlers;
 using FinancesApp_Module_Account.Domain;
+using FinancesApp_Module_Account.Domain.Events;
 using FinancesApp_Module_Account.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -48,17 +49,16 @@ public class ApplyDeltaHandlerTests
         };
 
     [Fact]
-    public async Task Handle_ShouldReturnTrue_WhenTransactionSucceeds()
+    public async Task Handle_ShouldReturnSuccess_WhenTransactionSucceeds()
     {
         var account = BuildCheckingAccount();
         var command = BuildCommand(account);
 
-        _mockStore.Setup(r => r.Append(account.Id, account.GetUncommittedEvents(), account.CurrentVersion,It.IsAny<CancellationToken>()));
-
         var result = await _handler.Handle(command);
 
-        Assert.True(result);
-        _mockStore.Verify(r => r.Append(account.Id, account.GetUncommittedEvents(), account.CurrentVersion, It.IsAny<CancellationToken>()),
+        Assert.True(result.Success);
+        Assert.Null(result.ErrorMessage);
+        _mockStore.Verify(r => r.Append(account.Id, It.IsAny<IReadOnlyList<IDomainEvent>>(), account.CurrentVersion, It.IsAny<CancellationToken>()),
                           Times.Once);
     }
 
@@ -68,12 +68,9 @@ public class ApplyDeltaHandlerTests
         var account = BuildCreditCardAccount();
         var command = BuildCommand(account, value: 200m, operationType: OperationType.CreditPurchase);
 
-        _repoMock.Setup(r => r.UpdateAccountAsync(account, null, It.IsAny<CancellationToken>()))
-                 .ReturnsAsync(true);
-
         var result = await _handler.Handle(command);
 
-        Assert.True(result);
+        Assert.True(result.Success);
     }
 
     [Fact]
@@ -86,16 +83,13 @@ public class ApplyDeltaHandlerTests
 
         var command = BuildCommand(account, value: 100m, operationType: OperationType.Payment);
 
-        _repoMock.Setup(r => r.UpdateAccountAsync(account, null, It.IsAny<CancellationToken>()))
-                 .ReturnsAsync(true);
-
         var result = await _handler.Handle(command);
 
-        Assert.True(result);
+        Assert.True(result.Success);
     }
 
     [Fact]
-    public async Task Handle_ShouldThrow_WhenAccountIsClosed()
+    public async Task Handle_ShouldFail_AndPersistError_WhenAccountIsClosed()
     {
         var account = new Account(AccountId, UserId,
             new Money(0m, "USD"), new Money(0m, "USD"),
@@ -104,45 +98,144 @@ public class ApplyDeltaHandlerTests
 
         var command = BuildCommand(account);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => _handler.Handle(command));
-        _mockStore.Verify(r => r.Append(account.Id, account.GetUncommittedEvents(), account.CurrentVersion, It.IsAny<CancellationToken>()),
-                          Times.Never);
-        
+        var result = await _handler.Handle(command);
+
+        Assert.False(result.Success);
+        Assert.Equal("Account is closed.", result.ErrorMessage);
+        _mockStore.Verify(r => r.Append(account.Id,
+                                        It.Is<IReadOnlyList<IDomainEvent>>(evts => evts.OfType<ApplyDeltaErrorEvent>().Any()),
+                                        It.IsAny<int>(),
+                                        It.IsAny<CancellationToken>()),
+                          Times.Once);
     }
 
     [Fact]
-    public async Task Handle_ShouldThrow_WhenCurrencyMismatches()
+    public async Task Handle_ShouldFail_WhenCurrencyMismatches()
     {
         var account = BuildCheckingAccount();
         var command = BuildCommand(account, currency: "BRL");
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => _handler.Handle(command));
+        var result = await _handler.Handle(command);
 
-        _mockStore.Verify(r => r.Append(account.Id, account.GetUncommittedEvents(), account.CurrentVersion, It.IsAny<CancellationToken>()),
-                         Times.Never);
-
+        Assert.False(result.Success);
+        Assert.Equal("Currency mismatch.", result.ErrorMessage);
     }
 
     [Fact]
-    public async Task Handle_ShouldThrow_WhenCashAccountHasInsufficientFunds()
+    public async Task Handle_ShouldFail_WhenCashAccountHasInsufficientFunds()
     {
         var account = new Account(UserId,
             new Money(50m, "USD"), AccountType.Cash);
 
         var command = BuildCommand(account, value: 200m);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => _handler.Handle(command));
+        var result = await _handler.Handle(command);
+
+        Assert.False(result.Success);
+        Assert.Equal("Insufficient funds in cash account.", result.ErrorMessage);
     }
 
     [Fact]
-    public async Task Handle_ShouldThrow_WhenCreditLimitExceeded()
+    public async Task Handle_ShouldFail_WhenCreditLimitExceeded()
     {
         var account = BuildCreditCardAccount();
         var command = BuildCommand(account, value: 5000m, operationType: OperationType.CreditPurchase);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => _handler.Handle(command));
-        _mockStore.Verify(r => r.Append(account.Id, account.GetUncommittedEvents(), account.CurrentVersion, It.IsAny<CancellationToken>()),
-                    Times.Never);
+        var result = await _handler.Handle(command);
+
+        Assert.False(result.Success);
+        Assert.Equal("Credit limit exceeded.", result.ErrorMessage);
     }
 
+    [Fact]
+    public async Task Handle_ShouldFail_WhenCurrencyIsEmpty()
+    {
+        var account = BuildCheckingAccount();
+        var command = BuildCommand(account, currency: "");
+
+        var result = await _handler.Handle(command);
+
+        Assert.False(result.Success);
+        Assert.Equal("Currency is required.", result.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldFail_WhenCurrencyIsNotThreeLetterCode()
+    {
+        var account = BuildCheckingAccount();
+        var command = BuildCommand(account, currency: "DOLLAR");
+
+        var result = await _handler.Handle(command);
+
+        Assert.False(result.Success);
+        Assert.Equal("Currency must be a 3-letter ISO code.", result.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldFail_WhenCreditCardAccountUsesMoneyTransaction()
+    {
+        var account = BuildCreditCardAccount();
+        var command = BuildCommand(account, value: 100m, operationType: OperationType.MoneyTransaction);
+
+        var result = await _handler.Handle(command);
+
+        Assert.False(result.Success);
+        Assert.Equal("Credit card accounts only support credit card operations.", result.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldFail_WhenRequestedAt_IsTooFarInPast()
+    {
+        var account = BuildCheckingAccount();
+        var command = BuildCommand(account);
+        command.RequestedAt = DateTimeOffset.UtcNow - ApplyDeltaHandler.RequestedAtSkewTolerance - TimeSpan.FromSeconds(1);
+
+        var result = await _handler.Handle(command);
+
+        Assert.False(result.Success);
+        Assert.Equal("RequestedAt is outside the allowed time window.", result.ErrorMessage);
+
+        _mockStore.Verify(r => r.Append(account.Id, It.IsAny<IReadOnlyList<IDomainEvent>>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
+                          Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldFail_WhenRequestedAt_IsTooFarInFuture()
+    {
+        var account = BuildCheckingAccount();
+        var command = BuildCommand(account);
+        command.RequestedAt = DateTimeOffset.UtcNow + ApplyDeltaHandler.RequestedAtSkewTolerance + TimeSpan.FromSeconds(1);
+
+        var result = await _handler.Handle(command);
+
+        Assert.False(result.Success);
+        Assert.Equal("RequestedAt is outside the allowed time window.", result.ErrorMessage);
+
+        _mockStore.Verify(r => r.Append(account.Id, It.IsAny<IReadOnlyList<IDomainEvent>>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
+                          Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldSucceed_WhenRequestedAt_IsWithinSkewTolerance_Past()
+    {
+        var account = BuildCheckingAccount();
+        var command = BuildCommand(account);
+        command.RequestedAt = DateTimeOffset.UtcNow - ApplyDeltaHandler.RequestedAtSkewTolerance + TimeSpan.FromSeconds(5);
+
+        var result = await _handler.Handle(command);
+
+        Assert.True(result.Success);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldSucceed_WhenRequestedAt_IsWithinSkewTolerance_Future()
+    {
+        var account = BuildCheckingAccount();
+        var command = BuildCommand(account);
+        command.RequestedAt = DateTimeOffset.UtcNow + ApplyDeltaHandler.RequestedAtSkewTolerance - TimeSpan.FromSeconds(5);
+
+        var result = await _handler.Handle(command);
+
+        Assert.True(result.Success);
+    }
 }
