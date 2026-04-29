@@ -42,8 +42,7 @@ public class ApplyDeltaHandlerTests
         new()
         {
             Account = account,
-            Value = value,
-            Currency = currency,
+            Delta = new Money(value, currency),
             OperationType = operationType,
             RequestedAt = DateTimeOffset.UtcNow
         };
@@ -145,30 +144,6 @@ public class ApplyDeltaHandlerTests
 
         Assert.False(result.Success);
         Assert.Equal("Credit limit exceeded.", result.ErrorMessage);
-    }
-
-    [Fact]
-    public async Task Handle_ShouldFail_WhenCurrencyIsEmpty()
-    {
-        var account = BuildCheckingAccount();
-        var command = BuildCommand(account, currency: "");
-
-        var result = await _handler.Handle(command);
-
-        Assert.False(result.Success);
-        Assert.Equal("Currency is required.", result.ErrorMessage);
-    }
-
-    [Fact]
-    public async Task Handle_ShouldFail_WhenCurrencyIsNotThreeLetterCode()
-    {
-        var account = BuildCheckingAccount();
-        var command = BuildCommand(account, currency: "DOLLAR");
-
-        var result = await _handler.Handle(command);
-
-        Assert.False(result.Success);
-        Assert.Equal("Currency must be a 3-letter ISO code.", result.ErrorMessage);
     }
 
     [Fact]

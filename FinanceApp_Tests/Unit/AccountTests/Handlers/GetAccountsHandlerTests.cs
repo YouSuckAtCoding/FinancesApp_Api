@@ -27,6 +27,7 @@ public class GetAccountsHandlerTests
     public async Task Should_Return_All_Accounts_When_Successful()
     {
         // Arrange
+        var userId = Guid.NewGuid();
         var expectedAccounts = new List<Account>
         {
             new Account(Guid.NewGuid(), new Money(1000, "USD"), AccountType.Checking),
@@ -34,10 +35,10 @@ public class GetAccountsHandlerTests
             new Account(Guid.NewGuid(), new Money(3000, "USD"), AccountType.CreditCard)
         }.AsReadOnly();
 
-        _mockRepository.GetAccounts(token: Arg.Any<CancellationToken>())
+        _mockRepository.GetAccounts(userId, token: Arg.Any<CancellationToken>())
             .Returns(expectedAccounts);
 
-        var query = new GetAccounts();
+        var query = new GetAccounts { UserId = userId };
 
         // Act
         var result = await _handler.Handle(query);
@@ -46,17 +47,18 @@ public class GetAccountsHandlerTests
         result.Should().NotBeNull();
         result.Should().HaveCount(3);
         result.Should().BeEquivalentTo(expectedAccounts);
-        await _mockRepository.Received(1).GetAccounts(token: Arg.Any<CancellationToken>());
+        await _mockRepository.Received(1).GetAccounts(userId, token: Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task Should_Return_Empty_List_When_No_Accounts_Exist()
     {
         // Arrange
-        _mockRepository.GetAccounts(token: default)
+        var userId = Guid.NewGuid();
+        _mockRepository.GetAccounts(userId, token: default)
             .Returns(new List<Account>().AsReadOnly());
 
-        var query = new GetAccounts();
+        var query = new GetAccounts { UserId = userId };
 
         // Act
         var result = await _handler.Handle(query);
@@ -70,17 +72,18 @@ public class GetAccountsHandlerTests
     public async Task Should_Return_Empty_List_When_Exception_Occurs()
     {
         // Arrange
-        _mockRepository.GetAccounts(token: default)
+        var userId = Guid.NewGuid();
+        _mockRepository.GetAccounts(userId, token: default)
             .Throws(new Exception("Database connection failed"));
 
-        var query = new GetAccounts();
+        var query = new GetAccounts { UserId = userId };
 
         // Act
         var result = await _handler.Handle(query);
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().BeEmpty();        
+        result.Should().BeEmpty();
     }
 
 }

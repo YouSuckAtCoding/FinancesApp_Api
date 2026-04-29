@@ -9,7 +9,8 @@ public interface IAccountReadRepository
     Task<Account> GetAccountById(Guid id, 
                                  SqlConnection? connection = default, 
                                  CancellationToken token = default);
-    Task<IReadOnlyList<Account>> GetAccounts(SqlConnection? connection = null,
+    Task<IReadOnlyList<Account>> GetAccounts(Guid userId,
+                                             SqlConnection? connection = null,
                                              CancellationToken token = default);
     Task<IReadOnlyList<Account>> GetActiveAccounts(SqlConnection? connection = null,
                                                    CancellationToken token = default);

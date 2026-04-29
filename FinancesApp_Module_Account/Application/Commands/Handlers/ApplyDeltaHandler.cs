@@ -50,7 +50,7 @@ public class ApplyDeltaHandler : ICommandHandler<ApplyDelta, ApplyDeltaResult>
 
             await _eventStore.Load(account.Id, token: cancellationToken);
 
-            account.ApplyDelta(command.Value, command.Currency, command.OperationType);
+            account.ApplyDelta(command.Delta, command.OperationType);
 
             var uncommitted = account.GetUncommittedEvents();
             var error = uncommitted.OfType<ApplyDeltaErrorEvent>().FirstOrDefault();
@@ -60,8 +60,8 @@ public class ApplyDeltaHandler : ICommandHandler<ApplyDelta, ApplyDeltaResult>
             if (error is not null)
             {
                 _logger.LogWarning(
-                    "ApplyDelta rejected for AccountId={AccountId}: {Error}. Attempted {Operation} {Amount} {Currency}",
-                    account.Id, error.ErrorMessage, error.AttemptedOperationType, error.AttemptedAmount, error.AttemptedCurrency);
+                    "ApplyDelta rejected for AccountId={AccountId}: {Error}. Attempted {Operation} {Delta}",
+                    account.Id, error.ErrorMessage, error.AttemptedOperationType, error.AttemptedDelta);
                 TransactionFailures.Inc();
                 return ApplyDeltaResult.Failed(error.ErrorMessage);
             }

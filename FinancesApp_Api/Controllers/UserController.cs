@@ -1,5 +1,7 @@
-﻿using FinancesApp_Api.Contracts.Requests.UserRequests;
+﻿using Asp.Versioning;
+using FinancesApp_Api.Contracts.Requests.UserRequests;
 using FinancesApp_Api.Endpoints;
+using FinancesApp_Api.StartUp;
 using FinancesApp_CQRS.Interfaces;
 using FinancesApp_Module_User.Application.Commands;
 using FinancesApp_Module_User.Application.Queries;
@@ -9,6 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FinancesApp_Api.Contracts.Requests.UserRequests;
 
 [ApiController]
+[ApiVersion(ApiVersions.V1)]
 public partial class UserController : ControllerBase
 {
     private readonly ILogger<UserController> _logger;

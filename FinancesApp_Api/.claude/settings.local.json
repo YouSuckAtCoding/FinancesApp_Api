@@ -6,7 +6,12 @@
       "Bash(dotnet build:*)",
       "Bash(dotnet test:*)",
       "Bash(iconv -f UTF-16LE -t UTF-8 \"C:\\\\Projetos\\\\PersonalFinance\\\\Api\\\\FinanceApp_Tests\\\\FinanceAppDb_V12.sql\")",
-      "Bash(dotnet add *)"
+      "Bash(dotnet add *)",
+      "Read(//c/Projetos/PersonalFinance/**)",
+      "Read(//c/Projetos/PersonalFinance/Api/**)",
+      "Bash(python -c \"import reportlab; print\\(reportlab.Version\\)\")",
+      "Bash(python /c/Projetos/PersonalFinance/Api/FinancesApp_Api/.tmp_pdf/build_pdf.py)",
+      "Bash(python -X utf8 /c/Projetos/PersonalFinance/Api/FinancesApp_Api/.tmp_pdf/verify_pdf.py)"
     ]
   }
 }

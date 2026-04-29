@@ -8,4 +8,6 @@ using System.Threading.Tasks;
 
 namespace FinancesApp_CQRS.Queries;
 public class GetAccounts : IQuery<IReadOnlyList<Account>>
-{}
+{
+    public Guid UserId { get; init; }
+}

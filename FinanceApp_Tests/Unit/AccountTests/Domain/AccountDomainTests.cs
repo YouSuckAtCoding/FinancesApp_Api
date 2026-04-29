@@ -30,28 +30,12 @@ public class AccountDomainTests
             AccountType.Checking
         );
 
-        account.ApplyDelta(600m, "USD", OperationType.CreditPurchase);
+        account.ApplyDelta(new Money(600m, "USD"), OperationType.CreditPurchase);
 
         var error = account.GetUncommittedEvents().OfType<ApplyDeltaErrorEvent>().Single();
         error.ErrorMessage.Should().Be("Credit limit exceeded.");
-        error.AttemptedAmount.Should().Be(600m);
-        error.AttemptedCurrency.Should().Be("USD");
+        error.AttemptedDelta.Should().Be(new Money(600m, "USD"));
         error.AttemptedOperationType.Should().Be(OperationType.CreditPurchase);
-    }
-
-    [Fact]
-    public void Should_RaiseApplyDeltaError_WhenCurrencyIsEmpty()
-    {
-        var account = new Account(
-            Guid.NewGuid(),
-            new Money(100, "USD"),
-            AccountType.Checking
-        );
-
-        account.ApplyDelta(50m, "");
-
-        var error = account.GetUncommittedEvents().OfType<ApplyDeltaErrorEvent>().Single();
-        error.ErrorMessage.Should().Be("Currency is required.");
     }
 
     [Fact]
@@ -63,7 +47,7 @@ public class AccountDomainTests
             AccountType.Checking
         );
 
-        account.ApplyDelta(50m, "EUR");
+        account.ApplyDelta(new Money(50m, "EUR"));
 
         var error = account.GetUncommittedEvents().OfType<ApplyDeltaErrorEvent>().Single();
         error.ErrorMessage.Should().Be("Currency mismatch.");
@@ -85,7 +69,7 @@ public class AccountDomainTests
             DateTimeOffset.UtcNow,
             DateTimeOffset.UtcNow);
 
-        account.ApplyDelta(50m, "USD");
+        account.ApplyDelta(new Money(50m, "USD"));
 
         var error = account.GetUncommittedEvents().OfType<ApplyDeltaErrorEvent>().Single();
         error.ErrorMessage.Should().Be("Account is closed.");
@@ -99,7 +83,7 @@ public class AccountDomainTests
             new Money(0m, "USD"),
             AccountType.CreditCard);
 
-        account.ApplyDelta(50m, "USD", OperationType.MoneyTransaction);
+        account.ApplyDelta(new Money(50m, "USD"), OperationType.MoneyTransaction);
 
         var error = account.GetUncommittedEvents().OfType<ApplyDeltaErrorEvent>().Single();
         error.ErrorMessage.Should().Be("Credit card accounts only support credit card operations.");
@@ -113,24 +97,10 @@ public class AccountDomainTests
             new Money(50m, "USD"),
             AccountType.Cash);
 
-        account.ApplyDelta(200m, "USD");
+        account.ApplyDelta(new Money(200m, "USD"));
 
         var error = account.GetUncommittedEvents().OfType<ApplyDeltaErrorEvent>().Single();
         error.ErrorMessage.Should().Be("Insufficient funds in cash account.");
-    }
-
-    [Fact]
-    public void Should_RaiseApplyDeltaError_WhenCurrencyIsNotThreeLetters()
-    {
-        var account = new Account(
-            Guid.NewGuid(),
-            new Money(100m, "USD"),
-            AccountType.Checking);
-
-        account.ApplyDelta(50m, "DOLLAR");
-
-        var error = account.GetUncommittedEvents().OfType<ApplyDeltaErrorEvent>().Single();
-        error.ErrorMessage.Should().Be("Currency must be a 3-letter ISO code.");
     }
 
     [Fact]

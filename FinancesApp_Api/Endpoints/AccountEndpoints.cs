@@ -2,7 +2,7 @@
 
 public static class AccountEndpoints
 {
-    public const string Base = "api/accounts";
+    public const string Base = "api/v{version:apiVersion}/accounts";
 
     public const string GetAccounts = Base;
 

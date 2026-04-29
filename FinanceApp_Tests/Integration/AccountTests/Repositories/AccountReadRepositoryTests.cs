@@ -94,17 +94,18 @@ public class AccountReadRepositoryTests : IClassFixture<SqlFixture>
         {
             await ClearAccounTable(connection);
 
+            Guid targetUserId = await CreateNewUser(connection);
 
             for (int i = 0; i < 5; i++)
             {
-                Guid newUserId = await CreateNewUser(connection);
+                Guid userIdForRow = i < 3 ? targetUserId : await CreateNewUser(connection);
 
                 await _commandFactory.ExecuteAsync(
                 commandText: InsertCommandText,
                 connection: connection,
                 options: new CreateSqlCommandOptions
                 {
-                  Parameters = [ new("@UserId", newUserId),
+                  Parameters = [ new("@UserId", userIdForRow),
                                  new("@BalanceAmount", parameters["@BalanceAmount"]),
                                  new("@CreatedAt", parameters["@CreatedAt"]),
                                  new("@Type", parameters["@Type"]),
@@ -117,9 +118,11 @@ public class AccountReadRepositoryTests : IClassFixture<SqlFixture>
                 },
                 default);
             }
-            var retrieved = await _accountReadRepository.GetAccounts(connection,
+            var retrieved = await _accountReadRepository.GetAccounts(targetUserId,
+                                                                     connection,
                                                                      default);
-            retrieved.Count.Should().Be(5);
+            retrieved.Count.Should().Be(3);
+            retrieved.Should().OnlyContain(a => a.UserId == targetUserId);
         });
     }
     [Fact]

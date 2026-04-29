@@ -98,12 +98,11 @@ public sealed class Account : AggregateRoot
         ClosedAt = closedAt;
     }
 
-    public void ApplyDelta(decimal amount,
-                           string currency,
+    public void ApplyDelta(Money delta,
                            OperationType opType = OperationType.MoneyTransaction,
                            TransactionType transactionType = TransactionType.Withdraw)
     {
-        var error = ValidateApplyDelta(amount, currency, opType, transactionType);
+        var error = ValidateApplyDelta(delta, opType, transactionType);
         if (error is not null)
         {
             Raise(new ApplyDeltaErrorEvent(Guid.NewGuid(),
@@ -111,14 +110,11 @@ public sealed class Account : AggregateRoot
                                            Id,
                                            UserId,
                                            error,
-                                           amount,
-                                           currency,
+                                           delta,
                                            opType,
                                            transactionType));
             return;
         }
-
-        var delta = new Money(amount, currency);
 
         if (Type == AccountType.CreditCard || opType == OperationType.CreditPurchase)
         {
@@ -362,16 +358,10 @@ public sealed class Account : AggregateRoot
         return true;
     }
 
-    private string? ValidateApplyDelta(decimal amount, string currency, OperationType opType, TransactionType transactionType)
+    private string? ValidateApplyDelta(Money delta, OperationType opType, TransactionType transactionType)
     {
         if (Status == AccountStatus.Closed)
             return "Account is closed.";
-
-        if (string.IsNullOrWhiteSpace(currency))
-            return "Currency is required.";
-
-        if (currency.Trim().Length != 3)
-            return "Currency must be a 3-letter ISO code.";
 
         var accountCurrency = Type switch
         {
@@ -383,13 +373,13 @@ public sealed class Account : AggregateRoot
         if (accountCurrency is null)
             return "Unknown account type.";
 
-        if (!string.Equals(accountCurrency, currency.Trim(), StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(accountCurrency, delta.Currency, StringComparison.OrdinalIgnoreCase))
             return "Currency mismatch.";
 
         if (Type == AccountType.CreditCard && opType != OperationType.CreditPurchase && opType != OperationType.Payment)
             return "Credit card accounts only support credit card operations.";
 
-        var abs = Math.Abs(amount);
+        var abs = Math.Abs(delta.Amount);
 
         if (Type == AccountType.CreditCard || opType == OperationType.CreditPurchase)
         {

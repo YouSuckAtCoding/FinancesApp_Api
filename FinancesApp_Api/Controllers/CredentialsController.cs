@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.RateLimiting;
 using FinancesApp_Api.Contracts.Requests.CredentialsRequests;
 using FinancesApp_Api.Contracts.Responses.CredentialsResponses;
@@ -19,6 +20,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FinancesApp_Api.Controllers;
 
 [ApiController]
+[ApiVersion(ApiVersions.V1)]
 public class UserCredentialsController(IQueryHandler<GetUserCredentialsByUserId, UserCredentials> getByUserIdHandler,
                                        IQueryHandler<GetUserCredentialsByLogin, UserCredentials> getByLoginHandler,
                                        IQueryHandler<GetUserByEmail, User> getUserByEmailHandler,
@@ -129,11 +131,11 @@ public class UserCredentialsController(IQueryHandler<GetUserCredentialsByUserId,
         if (credentials is null || credentials.Id == Guid.Empty)
             return NotFound("User credentials not found");
 
-        var accountsQuery = new GetAccounts();
+        var accountsQuery = new GetAccounts { UserId = validation.UserId };
         var accounts = await getAccountsHandler.Handle(accountsQuery, token);
 
         var userAccountIds = accounts
-            .Where(a => a.UserId == validation.UserId && a.Status == AccountStatus.Active)
+            .Where(a => a.Status == AccountStatus.Active)
             .Select(a => a.Id)
             .ToList();
 

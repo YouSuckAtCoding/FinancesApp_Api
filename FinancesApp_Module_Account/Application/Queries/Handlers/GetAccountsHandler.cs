@@ -29,7 +29,7 @@ public class GetAccountsHandler(IAccountReadRepository accountRepository,
         {
             try
             {
-                var result = await _accountRepository.GetAccounts(token: cancellationToken);
+                var result = await _accountRepository.GetAccounts(query.UserId, token: cancellationToken);
 
                 GetAccountsCounter.Inc();
 

@@ -76,14 +76,15 @@ public class AccountReadRepository : IAccountReadRepository
             throw;
         }
     }
-    public async Task<IReadOnlyList<Account>> GetAccounts(SqlConnection? connection = null,
+    public async Task<IReadOnlyList<Account>> GetAccounts(Guid userId,
+                                                          SqlConnection? connection = null,
                                                           CancellationToken token = default)
     {
         try
         {
             var result = new List<Account>();
             await _commandFactory.ExecuteAsync(
-                commandText: @"SELECT 
+                commandText: @"SELECT
                                     Id ,
                                     UserId ,
                                     BalanceAmount ,
@@ -97,10 +98,13 @@ public class AccountReadRepository : IAccountReadRepository
                                     Status ,
                                     Type ,
                                     CreatedAt ,
-                                    ClosedAt 
-                             FROM [FinanceApp].[dbo].[Account]",
+                                    ClosedAt
+                             FROM [FinanceApp].[dbo].[Account] WHERE UserId = @UserId",
                 connection: connection,
-                options: new CreateSqlCommandOptions(),
+                options: new CreateSqlCommandOptions
+                {
+                    Parameters = [new("@UserId", SqlDbType.UniqueIdentifier) { Value = userId }]
+                },
                 operation: async cmd =>
                 {
                     using var reader = await cmd.ExecuteReaderAsync(token);

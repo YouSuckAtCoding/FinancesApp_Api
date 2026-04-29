@@ -1,5 +1,7 @@
-﻿using FinancesApp_Api.Contracts.Requests.AccountRequests;
+﻿using Asp.Versioning;
+using FinancesApp_Api.Contracts.Requests.AccountRequests;
 using FinancesApp_Api.Endpoints;
+using FinancesApp_Api.Jwt;
 using FinancesApp_Api.Mapper;
 using FinancesApp_Api.StartUp;
 using FinancesApp_CQRS.Interfaces;
@@ -7,6 +9,7 @@ using FinancesApp_CQRS.Queries;
 using FinancesApp_Module_Account.Application.Commands;
 using FinancesApp_Module_Account.Application.Queries;
 using FinancesApp_Module_Account.Domain;
+using FinancesApp_Module_Account.Domain.ValueObjects;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -15,19 +18,33 @@ namespace FinancesApp_Api.Controllers;
 
 [Authorize]
 [ApiController]
+[ApiVersion(ApiVersions.V1)]
 public class AccountController(IQueryHandler<GetAccounts, IReadOnlyList<Account>> getAccountsHandler,
                                IQueryHandler<GetAccountById, Account> getAccountByIdHandler,
                                IQueryHandler<GetActiveAccounts, IReadOnlyList<Account>> getActiveAccountsHandler,
                                ICommandHandler<CreateAccount, bool> createAccountHandler,
-                               ICommandHandler<ApplyDelta, ApplyDeltaResult> applyDeltaHandler) : ControllerBase
+                               ICommandHandler<ApplyDelta, ApplyDeltaResult> applyDeltaHandler,
+                               IConfiguration configuration) : ControllerBase
 {
 
 
     [HttpGet(AccountEndpoints.GetAccounts)]
     public async Task<IActionResult> GetAccounts(CancellationToken token = default)
     {
+        if (User.FindFirst("token_type")?.Value != "full")
+            return Unauthorized("Full authentication required.");
 
-        var query = new GetAccounts();
+        var encryptedUserId = User.FindFirst("userid_enc")?.Value;
+        if (string.IsNullOrEmpty(encryptedUserId))
+            return Unauthorized("Missing user identity.");
+
+        var encryptionKey = configuration["ClaimEncryptionKey"]
+            ?? throw new InvalidOperationException("ClaimEncryptionKey not found in configuration.");
+
+        if (!Guid.TryParse(ClaimEncryption.Decrypt(encryptedUserId, encryptionKey), out var userId))
+            return Unauthorized("Invalid user identity.");
+
+        var query = new GetAccounts { UserId = userId };
         var accounts = await getAccountsHandler.Handle(query, token);
 
         return Ok(accounts);
@@ -97,11 +114,20 @@ public class AccountController(IQueryHandler<GetAccounts, IReadOnlyList<Account>
         if(account.Id == Guid.Empty)
             return NotFound();
 
+        Money delta;
+        try
+        {
+            delta = new Money(request.Amount, request.Currency);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+
         var command = new ApplyDelta()
         {
             Account = account,
-            Value = request.Amount,
-            Currency = request.Currency,
+            Delta = delta,
             OperationType = (OperationType)request.OperationType,
             RequestedAt = MappingUtils.ParseToDateTimeOffset(request.RequestedAt) ?? DateTimeOffset.UtcNow
         };

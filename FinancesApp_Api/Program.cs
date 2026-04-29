@@ -48,10 +48,12 @@ try
     builder.Services.AddScoped<ApiAuthKeyFilter>();
     builder.Services.AddApiVersioning(x =>
     {
-        x.DefaultApiVersion = new ApiVersion(1, 0);
+        x.DefaultApiVersion = ApiVersions.Current;
         x.AssumeDefaultVersionWhenUnspecified = true;
         x.ReportApiVersions = true;
-        x.ApiVersionReader = new MediaTypeApiVersionReader("api-version");
+        x.ApiVersionReader = ApiVersionReader.Combine(
+            new UrlSegmentApiVersionReader(),
+            new MediaTypeApiVersionReader("api-version"));
 
     }).AddApiExplorer(options =>
     {
