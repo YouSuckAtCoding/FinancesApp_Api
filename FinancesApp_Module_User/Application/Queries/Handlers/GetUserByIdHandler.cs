@@ -1,13 +1,16 @@
 using FinancesApp_CQRS.Interfaces;
+using FinancesApp_Module_User.Application.Repositories;
 using FinancesApp_Module_User.Domain;
 using Microsoft.Extensions.Logging;
 using Prometheus;
 
 namespace FinancesApp_Module_User.Application.Queries.Handlers;
 public class GetUserByIdHandler(IEventStore eventStore,
+                                IUserReadRepository userReadRepository,
                                 ILogger<GetUserByIdHandler> logger) : IQueryHandler<GetUserById, User>
 {
     private readonly IEventStore _eventStore = eventStore;
+    private readonly IUserReadRepository _userReadRepository = userReadRepository;
     private readonly ILogger<GetUserByIdHandler> _logger = logger;
 
     private static readonly Counter GetUserByIdCounter = Metrics
@@ -27,14 +30,15 @@ public class GetUserByIdHandler(IEventStore eventStore,
         {
             try
             {
-                var user = new User();
-
                 var events = await _eventStore.Load(query.UserId, token: token);
-
-                user.RebuildFromEvents(events);
 
                 GetUserByIdCounter.Inc();
 
+                if (events.Count == 0)
+                    return await _userReadRepository.GetUserById(query.UserId, token: token);
+
+                var user = new User();
+                user.RebuildFromEvents(events);
                 return user;
             }
             catch (Exception ex)

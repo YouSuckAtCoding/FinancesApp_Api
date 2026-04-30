@@ -30,6 +30,7 @@ public static class AccountModuleInjections
         services.AddScoped<IQueryHandler<GetAccountById, Account>, GetAccountByIdHandler>();
         services.AddScoped<IQueryHandler<GetAccounts, IReadOnlyList<Account>>, GetAccountsHandler>();
         services.AddScoped<IQueryHandler<GetActiveAccounts, IReadOnlyList<Account>>, GetActiveAccountsHandler>();
+        services.AddScoped<IQueryHandler<GetTransactionHistory, IReadOnlyList<AccountTransaction>>, GetTransactionHistoryHandler>();
 
         return services;
     }

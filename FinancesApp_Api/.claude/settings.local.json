@@ -11,7 +11,12 @@
       "Read(//c/Projetos/PersonalFinance/Api/**)",
       "Bash(python -c \"import reportlab; print\\(reportlab.Version\\)\")",
       "Bash(python /c/Projetos/PersonalFinance/Api/FinancesApp_Api/.tmp_pdf/build_pdf.py)",
-      "Bash(python -X utf8 /c/Projetos/PersonalFinance/Api/FinancesApp_Api/.tmp_pdf/verify_pdf.py)"
+      "Bash(python -X utf8 /c/Projetos/PersonalFinance/Api/FinancesApp_Api/.tmp_pdf/verify_pdf.py)",
+      "Bash(npx ng *)",
+      "Bash(npm install *)",
+      "Bash(node -e \"const sass = require\\('sass'\\); const result = sass.compile\\('src/styles.scss', {loadPaths: ['node_modules']}\\); console.log\\('ok'\\)\")",
+      "Bash(python *)",
+      "PowerShell(Get-Process *)"
     ]
   }
 }

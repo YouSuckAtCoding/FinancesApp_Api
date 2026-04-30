@@ -21,6 +21,7 @@ namespace FinancesApp_Api.Controllers;
 
 [ApiController]
 [ApiVersion(ApiVersions.V1)]
+[ApiVersion(ApiVersions.V1_1)]
 public class UserCredentialsController(IQueryHandler<GetUserCredentialsByUserId, UserCredentials> getByUserIdHandler,
                                        IQueryHandler<GetUserCredentialsByLogin, UserCredentials> getByLoginHandler,
                                        IQueryHandler<GetUserByEmail, User> getUserByEmailHandler,

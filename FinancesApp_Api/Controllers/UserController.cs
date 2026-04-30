@@ -12,6 +12,7 @@ namespace FinancesApp_Api.Contracts.Requests.UserRequests;
 
 [ApiController]
 [ApiVersion(ApiVersions.V1)]
+[ApiVersion(ApiVersions.V1_1)]
 public partial class UserController : ControllerBase
 {
     private readonly ILogger<UserController> _logger;

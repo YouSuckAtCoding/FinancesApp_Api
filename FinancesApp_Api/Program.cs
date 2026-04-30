@@ -79,6 +79,8 @@ try
 
     builder.Services.AddRateLimiting();
 
+    builder.Services.AddCorsPolicies();
+
     builder.Services.AddAccountModule();
     builder.Services.AddUserModule();
     builder.Services.AddCredentialsModule();
@@ -121,7 +123,10 @@ try
 
     app.UseSerilogRequestLogging();
 
-    app.UseHttpsRedirection();
+    if (!app.Environment.IsDevelopment())
+        app.UseHttpsRedirection();
+
+    app.UseCors(CorsInjections.FrontendPolicy);
 
     app.UseAuthentication();
     app.UseAuthorization();

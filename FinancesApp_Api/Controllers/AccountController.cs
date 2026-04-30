@@ -19,9 +19,11 @@ namespace FinancesApp_Api.Controllers;
 [Authorize]
 [ApiController]
 [ApiVersion(ApiVersions.V1)]
+[ApiVersion(ApiVersions.V1_1)]
 public class AccountController(IQueryHandler<GetAccounts, IReadOnlyList<Account>> getAccountsHandler,
                                IQueryHandler<GetAccountById, Account> getAccountByIdHandler,
                                IQueryHandler<GetActiveAccounts, IReadOnlyList<Account>> getActiveAccountsHandler,
+                               IQueryHandler<GetTransactionHistory, IReadOnlyList<AccountTransaction>> getTransactionHistoryHandler,
                                ICommandHandler<CreateAccount, bool> createAccountHandler,
                                ICommandHandler<ApplyDelta, ApplyDeltaResult> applyDeltaHandler,
                                IConfiguration configuration) : ControllerBase
@@ -138,6 +140,40 @@ public class AccountController(IQueryHandler<GetAccounts, IReadOnlyList<Account>
             return BadRequest(result.ErrorMessage);
 
         return Ok("Delta applied successfully");
+    }
+
+    [MapToApiVersion(ApiVersions.V1_1)]
+    [HttpGet(AccountEndpoints.GetTransactionHistory)]
+    public async Task<IActionResult> GetTransactionHistory([FromQuery] DateTimeOffset? from,
+                                                           [FromQuery] DateTimeOffset? to,
+                                                           CancellationToken token = default)
+    {
+        if (User.FindFirst("token_type")?.Value != "full")
+            return Unauthorized("Full authentication required.");
+
+        var encryptedUserId = User.FindFirst("userid_enc")?.Value;
+        if (string.IsNullOrEmpty(encryptedUserId))
+            return Unauthorized("Missing user identity.");
+
+        var encryptionKey = configuration["ClaimEncryptionKey"]
+            ?? throw new InvalidOperationException("ClaimEncryptionKey not found in configuration.");
+
+        if (!Guid.TryParse(ClaimEncryption.Decrypt(encryptedUserId, encryptionKey), out var userId))
+            return Unauthorized("Invalid user identity.");
+
+        if (from.HasValue && to.HasValue && from.Value > to.Value)
+            return BadRequest("'from' must be earlier than or equal to 'to'.");
+
+        var query = new GetTransactionHistory
+        {
+            UserId = userId,
+            From = from,
+            To = to
+        };
+
+        var transactions = await getTransactionHistoryHandler.Handle(query, token);
+
+        return Ok(transactions);
     }
 }
 

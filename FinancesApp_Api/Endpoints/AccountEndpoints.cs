@@ -6,7 +6,7 @@ public static class AccountEndpoints
 
     public const string GetAccounts = Base;
 
-    public const string GetAccountById = $"{Base}/{{id}}";
+    public const string GetAccountById = $"{Base}/{{accountId}}";
 
     public const string GetActiveAccounts = $"{Base}/active";
 
@@ -15,4 +15,6 @@ public static class AccountEndpoints
     public const string UpdateAccount = $"{Base}/{{id}}";
 
     public const string ApplyDeltaEndpoint = $"{Base}/delta";
+
+    public const string GetTransactionHistory = $"{Base}/transactions";
 }
