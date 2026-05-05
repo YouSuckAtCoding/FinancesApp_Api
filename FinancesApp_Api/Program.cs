@@ -77,6 +77,7 @@ try
 
     builder.Services.AddHostedService<OutboxProcessor>();
 
+    builder.Services.AddRedis(config);
     builder.Services.AddRateLimiting();
 
     builder.Services.AddCorsPolicies();

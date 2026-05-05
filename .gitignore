@@ -4,6 +4,7 @@ FinancesAppDb/
 bin/
 obj/
 .sql
+.pdf
 *.yaml
 Dockerfile
 /CLAUDE.md

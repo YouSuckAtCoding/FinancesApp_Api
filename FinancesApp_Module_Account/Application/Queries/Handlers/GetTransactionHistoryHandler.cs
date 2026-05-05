@@ -1,7 +1,10 @@
+using System.Text.Json;
 using FinancesApp_CQRS.Interfaces;
 using FinancesApp_Module_Account.Application.Repositories;
 using FinancesApp_Module_Account.Domain.Events;
 using FinancesApp_Module_Account.Domain.ValueObjects;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Prometheus;
 
@@ -9,6 +12,8 @@ namespace FinancesApp_Module_Account.Application.Queries.Handlers;
 
 public class GetTransactionHistoryHandler(IEventStore eventStore,
                                           IAccountReadRepository accountReadRepository,
+                                          IDistributedCache cache,
+                                          IConfiguration config,
                                           ILogger<GetTransactionHistoryHandler> logger)
     : IQueryHandler<GetTransactionHistory, IReadOnlyList<AccountTransaction>>
 {
@@ -22,11 +27,30 @@ public class GetTransactionHistoryHandler(IEventStore eventStore,
                 Buckets = Histogram.LinearBuckets(start: 0.1, width: 0.1, count: 10)
             });
 
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
     public async Task<IReadOnlyList<AccountTransaction>> Handle(GetTransactionHistory query,
                                                                 CancellationToken token = default)
     {
         using (Duration.NewTimer())
         {
+            var key = CacheKey(query);
+
+            try
+            {
+                var cached = await cache.GetStringAsync(key, token);
+                if (cached is not null)
+                {
+                    var hit = JsonSerializer.Deserialize<List<AccountTransaction>>(cached, JsonOptions);
+                    if (hit is not null)
+                        return hit;
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Cache read failed for key {Key}", key);
+            }
+
             try
             {
                 var accounts = await accountReadRepository.GetAccounts(query.UserId, token: token);
@@ -51,7 +75,22 @@ public class GetTransactionHistoryHandler(IEventStore eventStore,
 
                 Counter.Inc();
 
-                return [ ..transactions.OrderByDescending(t => t.Timestamp) ];
+                var result = (IReadOnlyList<AccountTransaction>)[..transactions.OrderByDescending(t => t.Timestamp)];
+
+                try
+                {
+                    var ttl = config.GetValue("Redis:TransactionHistoryTtlSeconds", 30);
+                    var json = JsonSerializer.Serialize(result, JsonOptions);
+                    await cache.SetStringAsync(key, json,
+                        new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(ttl) },
+                        token);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Cache write failed for key {Key}", key);
+                }
+
+                return result;
             }
             catch (Exception ex)
             {
@@ -60,6 +99,9 @@ public class GetTransactionHistoryHandler(IEventStore eventStore,
             }
         }
     }
+
+    public static string CacheKey(GetTransactionHistory query) =>
+        $"tx:{query.UserId}:{query.From?.ToString("O") ?? "null"}:{query.To?.ToString("O") ?? "null"}";
 
     private static AccountTransaction? MapToTransaction(IDomainEvent evt, Guid accountId) => evt switch
     {
