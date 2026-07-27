@@ -28,7 +28,9 @@
       "PowerShell(dotnet build *)",
       "PowerShell(dotnet test *)",
       "PowerShell(python --version; python -c \"import reportlab; print\\(reportlab.Version\\)\")",
-      "Bash(py generate_frontend_guide.py)"
+      "Bash(py generate_frontend_guide.py)",
+      "Bash(ls -la Api/Gateway/)",
+      "Bash(ls -la Api/Gateway/src/Authorizer/)"
     ]
   }
 }

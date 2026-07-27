@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <!-- Tells the AWS Lambda tooling this assembly is a Lambda function bundle. -->
+        <AWSProjectType>Lambda</AWSProjectType>
+        <!-- The managed dotnet8 runtime needs the deps/runtimeconfig files in the zip. -->
+        <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+        <AssemblyName>Gateway.Authorizer</AssemblyName>
+        <RootNamespace>Gateway.Authorizer</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Amazon.Lambda.Core" Version="2.5.0" />
+        <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.7.0" />
+        <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.4" />
+    </ItemGroup>
+
+</Project>

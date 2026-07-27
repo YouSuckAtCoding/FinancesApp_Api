@@ -1,0 +1,2 @@
+{"@t":"2026-07-07T23:03:08.0768662Z","@mt":"HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms","@r":["134.6832"],"@tr":"7f5822be69ac087679a7cb1624f10be0","@sp":"bf28f58a4e8ab858","RequestMethod":"GET","RequestPath":"/favicon.ico","StatusCode":404,"Elapsed":134.6832,"SourceContext":"Serilog.AspNetCore.RequestLoggingMiddleware","RequestId":"0HNMSFFGDFDRM:00000004","ConnectionId":"0HNMSFFGDFDRM"}
+,
